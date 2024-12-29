@@ -79,13 +79,18 @@ echo "Testing container..."
 podman run -d \
     --name test_container \
     --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+    --security-opt label=disable \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+    --cgroupns=host \
     -p 2222:22 \
     "$CONTAINER_TYPE" \
     /sbin/init
 
 # Wait for container to start
 sleep 5
+
+echo "Setting up container environment..."
+podman exec -u root test_container /bin/bash -c 'chown root:root /usr/bin/sudo && chmod 4755 /usr/bin/sudo'
 
 # Debug: Check sudo permissions inside container
 echo "Checking container setup..."

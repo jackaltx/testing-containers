@@ -1,3 +1,58 @@
+# 202041229 PM 
+
+Let me summarize our Rocky Linux container debugging journey:
+
+1. Initial Issue:
+   - Debian container was working
+   - Rocky container failed with sudo permission errors
+   - Error: "sudo: /usr/bin/sudo must be owned by uid 0 and have the setuid bit set"
+
+2. First Attempt - Containerfile Changes:
+   - Added explicit sudo permissions (chmod 4755)
+   - Added explicit ownership (chown root:root)
+   - Added permission verification steps
+   - Added SSH host key generation (ssh-keygen -A)
+
+3. Second Attempt - Container Runtime:
+   - Added debugging steps to check container state
+   - Added permission checks after container start
+   - Used numeric UIDs (0:0) instead of root:root
+   - Added verification of sudo setup
+
+4. Final Working Solution:
+   - Modified container run command with better security options:
+     ```bash
+     podman run -d \
+         --name test_container \
+         --privileged \
+         --security-opt label=disable \
+         -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+         --cgroupns=host \
+         -p 2222:22 \
+         "$CONTAINER_TYPE" \
+         /sbin/init
+     ```
+   - Changed inventory to use root directly:
+     ```yaml
+     ansible_user: root  # Instead of using sudo escalation
+     ```
+   - Added explicit sudo setup after container start
+
+5. Key Learnings:
+   - Rocky Linux needs different container security settings than Debian
+   - SELinux considerations are important for Rocky
+   - Using root directly is more reliable than sudo for initial setup
+   - Systemd and cgroup handling differs between distributions
+
+6. Remaining Tasks:
+   - Test the working configuration with a full deployment
+   - Document the differences between Debian and Rocky setups
+   - Consider if we should standardize the approach between distributions
+
+Would you like me to elaborate on any of these points or look at any specific aspect in more detail?
+
+
+# 20241229 AM
 
 Let me summarize the key changes we made to get the build script working:
 
