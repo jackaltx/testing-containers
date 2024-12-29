@@ -92,16 +92,16 @@ sleep 5
 echo "Setting up container environment..."
 podman exec -u root test_container /bin/bash -c 'chown root:root /usr/bin/sudo && chmod 4755 /usr/bin/sudo'
 
-# Debug: Check sudo permissions inside container
-echo "Checking container setup..."
-podman exec test_container ls -l /usr/bin/sudo
-podman exec test_container id
-podman exec test_container getfacl /usr/bin/sudo
+# # Debug: Check sudo permissions inside container
+# echo "Checking container setup..."
+# podman exec test_container ls -l /usr/bin/sudo
+# podman exec test_container id
+# podman exec test_container getfacl /usr/bin/sudo
 
-# Ensure sudo has correct permissions inside running container
-echo "Fixing sudo permissions..."
-podman exec test_container chmod 4755 /usr/bin/sudo
-podman exec test_container chown root:root /usr/bin/sudo
+# # Ensure sudo has correct permissions inside running container
+# echo "Fixing sudo permissions..."
+# podman exec test_container chmod 4755 /usr/bin/sudo
+# podman exec test_container chown root:root /usr/bin/sudo
 
 sleep 5  # Wait for container to be ready
 
