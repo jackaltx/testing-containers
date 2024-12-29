@@ -32,6 +32,13 @@ fi
 #
 if [ -n "$GITHUB_TOKEN" ]; then
     echo "$GITHUB_TOKEN" | podman login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+    echo "Attempting to delete existing package from GHCR..."
+    curl -X DELETE \
+         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+         "https://api.github.com/user/packages/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/versions/latest"
+    sleep 5
+    
 elif [ -n "$GITEA_TOKEN" ]; then
     echo "$GITEA_TOKEN" | podman login --username "$REGISTRY_USER" --password-stdin "${REGISTRY_URL}"
 
