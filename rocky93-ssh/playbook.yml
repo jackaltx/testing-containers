@@ -1,0 +1,36 @@
+---
+- name: Configure Rocky Linux container
+  hosts: rocky_container
+  gather_facts: yes
+  become: yes
+  
+  tasks:
+    - name: Update all packages
+      dnf:
+        name: '*'
+        state: latest
+      
+    - name: Install additional packages
+      dnf:
+        name:
+          - vim
+          - wget
+          - git
+          - tmux
+        state: present
+
+    - name: Ensure SSH directory has correct permissions
+      file:
+        path: /home/lavender/.ssh
+        state: directory
+        mode: '0700'
+        owner: lavender
+        group: lavender
+
+    - name: Ensure authorized_keys has correct permissions
+      file:
+        path: /home/lavender/.ssh/authorized_keys
+        state: file
+        mode: '0600'
+        owner: lavender
+        group: lavender

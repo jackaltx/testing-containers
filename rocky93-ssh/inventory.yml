@@ -1,0 +1,6 @@
+all:
+  hosts:
+    rocky_container:
+      ansible_connection: containers.podman
+      ansible_host: test_container
+      ansible_user: lavender

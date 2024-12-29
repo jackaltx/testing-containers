@@ -1,0 +1,39 @@
+FROM debian:12
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update and install required packages
+RUN apt-get update && \
+    apt-get install -y \
+    python3 \
+    sudo \
+    systemd \
+    openssh-server \
+    python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Mask unnecessary systemd services
+RUN systemctl mask systemd-machine-id-commit.service
+
+# Create lavender user and set up sudo
+RUN useradd -m -s /bin/bash lavender && \
+    echo "lavender ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/lavender
+
+# Create ansible temp directory with proper permissions
+RUN mkdir -p /tmp/ansible-lavender && \
+    chown lavender:lavender /tmp/ansible-lavender && \
+    chmod 700 /tmp/ansible-lavender
+
+# Set up SSH
+RUN mkdir -p /home/lavender/.ssh && \
+    chmod 700 /home/lavender/.ssh
+
+# SSH key will be added during build
+ARG SSH_KEY
+RUN echo "$SSH_KEY" > /home/lavender/.ssh/authorized_keys && \
+    chmod 600 /home/lavender/.ssh/authorized_keys && \
+    chown -R lavender:lavender /home/lavender/.ssh
+
+# Configure SSH
+RUN mkdir -p /run/sshd && \
+    systemctl enable ssh

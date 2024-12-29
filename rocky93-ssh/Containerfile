@@ -1,0 +1,23 @@
+FROM rockylinux:9.3
+RUN dnf -y update && \
+    dnf -y install python3 sudo systemd openssh-server && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+RUN systemctl mask systemd-machine-id-commit.service
+
+# Create lavender user and set up sudo
+RUN useradd -m -s /bin/bash lavender && \
+    echo "lavender ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/lavender
+
+# Set up SSH
+RUN mkdir -p /home/lavender/.ssh && \
+    chmod 700 /home/lavender/.ssh
+
+# SSH key will be added during build
+ARG SSH_KEY
+RUN echo "$SSH_KEY" > /home/lavender/.ssh/authorized_keys && \
+    chmod 600 /home/lavender/.ssh/authorized_keys && \
+    chown -R lavender:lavender /home/lavender/.ssh
+
+# Enable and start SSH
+RUN systemctl enable sshd

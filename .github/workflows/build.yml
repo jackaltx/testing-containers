@@ -1,0 +1,32 @@
+---
+name: Build Containers
+
+on:
+  push:
+    branches:
+      -  main
+  pull_request:
+    branches:
+        -  main
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container-type: [rocky93-ssh, debian12-ssh]
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and Push Container
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONTAINER_TYPE: ${{ matrix.container-type }}
+          SSH_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        run: |
+          chmod +x ./scripts/build_container.sh
+          ./scripts/build_container.sh
