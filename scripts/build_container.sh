@@ -84,6 +84,20 @@ podman run -d \
     "$CONTAINER_TYPE" \
     /sbin/init
 
+# Wait for container to start
+sleep 5
+
+# Debug: Check sudo permissions inside container
+echo "Checking container setup..."
+podman exec test_container ls -l /usr/bin/sudo
+podman exec test_container id
+podman exec test_container getfacl /usr/bin/sudo
+
+# Ensure sudo has correct permissions inside running container
+echo "Fixing sudo permissions..."
+podman exec test_container chmod 4755 /usr/bin/sudo
+podman exec test_container chown root:root /usr/bin/sudo
+
 sleep 5  # Wait for container to be ready
 
 #################################################################

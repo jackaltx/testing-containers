@@ -12,8 +12,9 @@ RUN dnf -y update && \
     && rm -rf /var/cache/dnf
 
 # Ensure sudo has correct permissions
-RUN chmod 4755 /usr/bin/sudo && \
-    chown root:root /usr/bin/sudo
+RUN chown 0:0 /usr/bin/sudo && \
+    chmod 4755 /usr/bin/sudo && \
+    ls -l /usr/bin/sudo
 
 # Mask unnecessary systemd services
 RUN systemctl mask systemd-machine-id-commit.service
