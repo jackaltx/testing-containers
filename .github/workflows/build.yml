@@ -35,14 +35,14 @@ jobs:
 
       - name: Set up environment variables
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.CONTAINER_TOKEN }}" >> $GITHUB_ENV
-          echo "SSH_KEY=${{ secrets.SSH_KEY }}" >> $GITHUB_ENV
+          echo "CONTAINER_TOKEN=${{ secrets.CONTAINER_TOKEN }}" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y podman ansible
-          ansible-galaxy collection install -p community.docker
+          # Install collection in the GitHub workspace
+          ansible-galaxy collection install -p ./ community.docker
 
       - name: Set up podman
         run: |
@@ -52,6 +52,9 @@ jobs:
       - name: Build and push ${{ matrix.container-type }}
         env:
           CONTAINER_TYPE: ${{ matrix.container-type }}
+          SSH_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}
+          GITHUB_ACTIONS: "true"
         run: |
           ./scripts/build_container.sh
 

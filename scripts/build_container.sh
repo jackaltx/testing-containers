@@ -15,9 +15,13 @@ REGISTRY_HOST=${REGISTRY_HOST:-"gitea.a0a0.org:3001"}
 REGISTRY_USER=${REGISTRY_USER:-"jackaltx"}
 REGISTRY_REPO=${REGISTRY_REPO:-"testing-containers"}
 CONTAINER_TYPE=${CONTAINER_TYPE:-""} # rocky93-ssh or debian12-ssh
-SSH_KEY=${SSH_KEY:-$(cat ~/.ssh/id_ed25519.pub)}
-REGISTRY_URL="https://${REGISTRY_HOST}"
 ORIGINAL_DIR=$(pwd)
+
+# Validate SSH key
+if [ -z "$SSH_KEY" ]; then
+    echo "Error: SSH_KEY must be provided"
+    exit 1
+fi
 
 #################################################################
 # Validate required input
@@ -28,32 +32,20 @@ if [[ ! "$CONTAINER_TYPE" =~ ^(rocky93-ssh|debian12-ssh)$ ]]; then
 fi
 
 #################################################################
-# Registry login and remove previous pkg
+# Registry login
 #
-if [ -n "$GITHUB_TOKEN" ]; then
-    echo "$GITHUB_TOKEN" | podman login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-
-    echo "Attempting to delete existing package from GHCR..."
-    curl -X DELETE \
-         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-         "https://api.github.com/user/packages/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/versions/latest"
-    sleep 5
+if [ -n "$CONTAINER_TOKEN" ]; then
+    echo "$CONTAINER_TOKEN" | podman login ghcr.io -u "$REGISTRY_USER" --password-stdin
     
 elif [ -n "$GITEA_TOKEN" ]; then
     echo "$GITEA_TOKEN" | podman login --username "$REGISTRY_USER" --password-stdin "${REGISTRY_URL}"
-
-    echo "Attempting to delete existing package from Gitea..."
-    curl -X DELETE \
-         -H "Authorization: token ${GITEA_TOKEN}" \
-         "${REGISTRY_URL}/api/v1/packages/${REGISTRY_USER}/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/latest"
-    sleep 5
 else
     echo "No authentication token provided"
     exit 1
 fi
 
 # Set image name based on registry
-if [ -n "$GITHUB_TOKEN" ]; then
+if [ -n "$GITHUB_ACTIONS" ]; then
     REGISTRY_IMAGE="ghcr.io/${GITHUB_REPOSITORY}/${CONTAINER_TYPE}"
 else
     REGISTRY_IMAGE="${REGISTRY_HOST}/${REGISTRY_USER}/${REGISTRY_REPO}/${CONTAINER_TYPE}"
@@ -99,24 +91,19 @@ sleep 5
 echo "Setting up container environment..."
 podman exec -u root test_container /bin/bash -c 'chown root:root /usr/bin/sudo && chmod 4755 /usr/bin/sudo'
 
-# # Debug: Check sudo permissions inside container
-# echo "Checking container setup..."
-# podman exec test_container ls -l /usr/bin/sudo
-# podman exec test_container id
-# podman exec test_container getfacl /usr/bin/sudo
-
-# # Ensure sudo has correct permissions inside running container
-# echo "Fixing sudo permissions..."
-# podman exec test_container chmod 4755 /usr/bin/sudo
-# podman exec test_container chown root:root /usr/bin/sudo
-
 sleep 5  # Wait for container to be ready
 
 #################################################################
 # Run ansible playbook
 #
 echo "Configuring container..."
-ansible-playbook -i inventory.yml playbook.yml
+if [ -n "$GITHUB_ACTIONS" ]; then
+    ansible-playbook -i inventory.yml \
+                    -e "ansible_connection=docker" \
+                    playbook.yml
+else
+    ansible-playbook -i inventory.yml playbook.yml
+fi
 
 #################################################################
 # Create and push final image
@@ -140,7 +127,7 @@ podman stop test_container
 podman rm test_container
 
 # Logout from registry
-if [ -n "$GITHUB_TOKEN" ]; then
+if [ -n "$GITHUB_ACTIONS" ]; then
     podman logout ghcr.io
 else
     podman logout "${REGISTRY_URL}"
