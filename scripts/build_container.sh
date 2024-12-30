@@ -29,6 +29,7 @@ fi
 #
 if [[ ! "$CONTAINER_TYPE" =~ ^(rocky93-ssh|debian12-ssh)$ ]]; then
     echo "CONTAINER_TYPE must be either 'rocky93-ssh' or 'debian12-ssh'"
+    echo "Container type was ${CONTAINER_TYPE}"
     exit 1
 fi
 
