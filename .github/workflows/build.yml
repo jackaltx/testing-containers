@@ -36,7 +36,7 @@ jobs:
       - name: Set up environment variables
         run: |
           echo "GITHUB_TOKEN=${{ secrets.CONTAINER_TOKEN }}" >> $GITHUB_ENV
-          echo "SSH_KEY=${{ secrets.SSH_PUBLIC_KEY }}" >> $GITHUB_ENV
+          echo "SSH_KEY=${{ secrets.SSH_KEY }}" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
