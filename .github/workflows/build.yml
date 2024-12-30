@@ -27,7 +27,7 @@ jobs:
 
     strategy:
       matrix:
-        container-type: [ debian12-ssh, rocky93-ssh ]
+        container-type: [ "debian12-ssh", "rocky93-ssh" ]
       fail-fast: false
 
     steps:
