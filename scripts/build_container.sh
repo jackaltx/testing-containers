@@ -108,27 +108,49 @@ podman exec -u root test_container /bin/bash -c 'chown root:root /usr/bin/sudo &
 
 sleep 5  # Wait for container to be ready
 
+
+#################################################################
+# Add Podman socket setup
+#
+
+echo "Setting up Podman socket..."
+systemctl --user enable podman.socket || true
+systemctl --user start podman.socket || true
+export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
+
+
 #################################################################
 # Run ansible playbook
 #
 
+echo "#####################################################################"
+echo "#####################################################################"
+
+
+# Debug output (remove after working)
+echo "#####################################################################"
 echo "Container status:"
 podman ps -a
-echo "Container logs:"
 
+echo "#####################################################################"
+echo "Container logs:"
 podman logs test_container
 
+echo "#####################################################################"
 echo "Ansible inventory:"
 cat inventory.yml
 
+echo "#####################################################################"
+echo "#####################################################################"
 
-
+# ................................................................
 echo "Configuring container..."
 if [ -n "$GITHUB_ACTIONS" ]; then
-    ansible-galaxy collection install community.docker
-    ansible-playbook -i inventory.yml \
-                    -e "ansible_connection=docker" \
-                    playbook.yml
+    # ansible-galaxy collection install community.docker
+    ansible-playbook -i inventory.yml playbook.yml
+#    ansible-playbook -i inventory.yml \
+#                     -e "ansible_connection=docker" \
+#                     playbook.yml
 else
     ansible-playbook -i inventory.yml playbook.yml
 fi
