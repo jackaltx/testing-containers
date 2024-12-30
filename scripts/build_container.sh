@@ -121,8 +121,11 @@ podman logs test_container
 echo "Ansible inventory:"
 cat inventory.yml
 
+
+
 echo "Configuring container..."
 if [ -n "$GITHUB_ACTIONS" ]; then
+    ansible-galaxy collection install community.docker
     ansible-playbook -i inventory.yml \
                     -e "ansible_connection=docker" \
                     playbook.yml

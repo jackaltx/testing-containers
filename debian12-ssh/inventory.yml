@@ -8,3 +8,5 @@ all:
       ansible_python_interpreter: python3
       ansible_remote_tmp: /tmp/ansible-${USER}
       ansible_pipelining: true
+  vars:
+    ansible_docker_python_interpreter: python3
