@@ -15,6 +15,7 @@ REGISTRY_HOST=${REGISTRY_HOST:-"gitea.a0a0.org:3001"}
 REGISTRY_USER=${REGISTRY_USER:-"jackaltx"}
 REGISTRY_REPO=${REGISTRY_REPO:-"testing-containers"}
 CONTAINER_TYPE=${CONTAINER_TYPE:-""} # rocky93-ssh or debian12-ssh
+REGISTRY_URL="https://${REGISTRY_HOST}"
 ORIGINAL_DIR=$(pwd)
 
 # Validate SSH key
@@ -36,9 +37,23 @@ fi
 #
 if [ -n "$CONTAINER_TOKEN" ]; then
     echo "$CONTAINER_TOKEN" | podman login ghcr.io -u "$REGISTRY_USER" --password-stdin
-    
+
+    # Delete the GitHub package first
+    curl -X DELETE \
+        -H "Authorization: Bearer ${CONTAINER_TOKEN}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        "https://api.github.com/user/packages/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/versions/latest"
+    sleep 5
+
 elif [ -n "$GITEA_TOKEN" ]; then
     echo "$GITEA_TOKEN" | podman login --username "$REGISTRY_USER" --password-stdin "${REGISTRY_URL}"
+
+    echo "Attempting to delete existing package from Gitea..."
+    curl -X DELETE \
+         -H "Authorization: token ${GITEA_TOKEN}" \
+         "${REGISTRY_URL}/api/v1/packages/${REGISTRY_USER}/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/latest"
+    sleep 5
+
 else
     echo "No authentication token provided"
     exit 1
