@@ -62,7 +62,7 @@ jobs:
           REGISTRY_HOST: ghcr.io
           REGISTRY_USER: ${{ github.repository_owner }}
           REGISTRY_REPO: testing-containers
-          CONTAINER_TYPE: ${{ matrix.container_type }}
+          CONTAINER_TYPE: debian12-ssh # ${{ matrix.container_type }}
           CONTAINER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
           ANSIBLE_COMMON_ARGS: "-e ansible_connection=community.docker.docker"
