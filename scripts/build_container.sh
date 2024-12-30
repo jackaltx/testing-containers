@@ -111,6 +111,16 @@ sleep 5  # Wait for container to be ready
 #################################################################
 # Run ansible playbook
 #
+
+echo "Container status:"
+podman ps -a
+echo "Container logs:"
+
+podman logs test_container
+
+echo "Ansible inventory:"
+cat inventory.yml
+
 echo "Configuring container..."
 if [ -n "$GITHUB_ACTIONS" ]; then
     ansible-playbook -i inventory.yml \
