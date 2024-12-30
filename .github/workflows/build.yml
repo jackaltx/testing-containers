@@ -1,32 +1,65 @@
----
-name: Build Containers
+name: Build and Push Containers
 
 on:
   push:
-    branches:
-      -  main
+    branches: [ "main" ]
+    paths:
+      - 'debian12-ssh/**'
+      - 'rocky93-ssh/**'
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
   pull_request:
-    branches:
-        -  main
-  
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY_HOST: ghcr.io
+  REGISTRY_USER: ${{ github.actor }}
+  REGISTRY_REPO: testing-containers
+
 jobs:
-  build:
+  build-containers:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        container-type: [rocky93-ssh, debian12-ssh]
     permissions:
       contents: read
       packages: write
 
-    steps:
-      - uses: actions/checkout@v4
+    strategy:
+      matrix:
+        container-type: [debian12-ssh, rocky93-ssh]
+      fail-fast: false
 
-      - name: Build and Push Container
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONTAINER_TYPE: ${{ matrix.container-type }}
-          SSH_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up environment variables
         run: |
-          chmod +x ./scripts/build_container.sh
+          echo "GITHUB_TOKEN=${{ secrets.CONTAINER_TOKEN }}" >> $GITHUB_ENV
+          echo "SSH_KEY=${{ secrets.SSH_PUBLIC_KEY }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Set up podman
+        run: |
+          mkdir -p ~/.config/containers
+          chmod 700 ~/.config/containers
+
+      - name: Build and push ${{ matrix.container-type }}
+        env:
+          CONTAINER_TYPE: ${{ matrix.container-type }}
+        run: |
           ./scripts/build_container.sh
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-logs-${{ matrix.container-type }}
+          path: |
+            .working/${{ matrix.container-type }}/
+            ~/.local/share/containers/
