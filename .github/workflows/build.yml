@@ -49,19 +49,19 @@ jobs:
           ansible-galaxy collection install -p ./ community.docker
 
       # .................................................................
-      - name: Configure container environment 
-      run: |
-        mkdir -p ~/.config/containers ~/.local/share/containers
-        chmod 700 ~/.config/containers ~/.local/share/containers
-        cat > ~/.config/containers/containers.conf << EOF
-        [containers]
-        default_capabilities = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID", "KILL", "NET_BIND_SERVICE", "SETFCAP", "SETGID", "SETPCAP", "SETUID", "SYS_CHROOT"]
-        [engine]
-        runtime = "crun"
-        cgroup_manager = "cgroupfs"
-        events_logger = "journald"
-        EOF
-        podman system info
+      - name: Configure container environment
+        run: |
+          mkdir -p ~/.config/containers ~/.local/share/containers
+          chmod 700 ~/.config/containers ~/.local/share/containers
+          cat > ~/.config/containers/containers.conf << 'EOL'
+          [containers]
+          default_capabilities = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID", "KILL", "NET_BIND_SERVICE", "SETFCAP", "SETGID", "SETPCAP", "SETUID", "SYS_CHROOT"]
+          [engine]
+          runtime = "crun"
+          cgroup_manager = "cgroupfs"
+          events_logger = "journald"
+          EOL
+          podman system info
 
       # .................................................................
       - name: Build container
@@ -84,3 +84,5 @@ jobs:
           path: |
             .working/${{ matrix.container-type }}/
             ~/.local/share/containers/
+          if-no-files-found: warn
+          include-hidden-files: false
