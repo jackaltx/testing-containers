@@ -38,9 +38,8 @@ jobs:
       # .................................................................
       - name: Set up environment variables
         run: |
-          echo "CONTAINER_TOKEN=${{ secrets.CONTAINER_TOKEN }}" >> $GITHUB_ENV
-          echo "CONTAINER_TYPE: ${{ matrix.container_type }}"" >> $GITHUB_ENV
-          echo "${{ GITHUB_ENV }}"
+          echo "CONTAINER_TOKEN=${{ secrets.CONTAINER_TOKEN }}" # >> $GITHUB_ENV
+          echo "CONTAINER_TYPE=${{ matrix.container_type }}" # >> $GITHUB_ENV
 
       # .................................................................
       - name: Install dependencies
