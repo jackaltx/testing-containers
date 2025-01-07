@@ -1,3 +1,10 @@
+################################################################
+# Notes:
+#  The purpose is to establish a base OS configuration with a non-root
+#  provisioning user. As the provisioning user does NOT have a password,
+#  we need to create a user that will automatically sudo.
+#  So honestly..I am conflicted.
+#
 FROM rockylinux:9.3
 
 # Update and install required packages
@@ -19,31 +26,31 @@ RUN chown 0:0 /usr/bin/sudo && \
 # Mask unnecessary systemd services
 RUN systemctl mask systemd-machine-id-commit.service
 
-# Create lavender user and set up sudo
-RUN useradd -m -s /bin/bash lavender && \
-    echo "lavender ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/lavender && \
-    chmod 440 /etc/sudoers.d/lavender
+# Create provisioner user and set up sudo
+RUN useradd -m -s /bin/bash jackaltx && \
+    echo "jackaltx ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/jackaltx && \
+    chmod 440 /etc/sudoers.d/jackaltx
 
 # Create ansible temp directory with proper permissions
-RUN mkdir -p /tmp/ansible-lavender && \
-    chown lavender:lavender /tmp/ansible-lavender && \
-    chmod 700 /tmp/ansible-lavender
+RUN mkdir -p /tmp/ansible-jackaltx && \
+    chown jackaltx:jackaltx /tmp/ansible-jackaltx && \
+    chmod 700 /tmp/ansible-jackaltx
 
 # Set up SSH
-RUN mkdir -p /home/lavender/.ssh && \
-    chmod 700 /home/lavender/.ssh && \
+RUN mkdir -p /home/jackaltx/.ssh && \
+    chmod 700 /home/jackaltx/.ssh && \
     mkdir -p /run/sshd
 
 # SSH key will be added during build
 ARG SSH_KEY
-RUN echo "$SSH_KEY" > /home/lavender/.ssh/authorized_keys && \
-    chmod 600 /home/lavender/.ssh/authorized_keys && \
-    chown -R lavender:lavender /home/lavender/.ssh
+RUN echo "$SSH_KEY" > /home/jackaltx/.ssh/authorized_keys && \
+    chmod 600 /home/jackaltx/.ssh/authorized_keys && \
+    chown -R jackaltx:jackaltx /home/jackaltx/.ssh
 
 # Configure SELinux for SSH (if enabled)
 RUN if command -v semanage >/dev/null 2>&1; then \
-    semanage fcontext -a -t ssh_home_t "/home/lavender/.ssh(/.*)?" && \
-    restorecon -R -v /home/lavender/.ssh \
+    semanage fcontext -a -t ssh_home_t "/home/jackaltx/.ssh(/.*)?" && \
+    restorecon -R -v /home/jackaltx/.ssh \
     ; fi
 
 # Generate SSH host keys and configure SSH
@@ -53,6 +60,6 @@ RUN ssh-keygen -A && \
 
 # Verify permissions
 RUN ls -l /usr/bin/sudo && \
-    ls -l /etc/sudoers.d/lavender && \
-    id lavender && \
-    sudo -l -U lavender
+    ls -l /etc/sudoers.d/jackaltx && \
+    id jackaltx && \
+    sudo -l -U jackaltx

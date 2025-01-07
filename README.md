@@ -135,7 +135,7 @@ all:
     debian_container:
       ansible_connection: community.docker.docker
       ansible_host: test_container
-      ansible_user: lavender
+      ansible_user: jackaltx
       ansible_become: true
       ansible_python_interpreter: python3
       ansible_remote_tmp: /tmp/ansible-${USER}
@@ -162,7 +162,7 @@ podman ps
 podman logs test_container
 
 # Verify SSH access
-ssh -p 2222 lavender@localhost
+ssh -p 2222 jackaltx@localhost
 ```
 
 3. Registry Authentication Issues

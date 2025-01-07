@@ -21,16 +21,16 @@
 
     - name: Ensure SSH directory has correct permissions
       file:
-        path: /home/lavender/.ssh
+        path: /home/jackaltx/.ssh
         state: directory
         mode: "0700"
-        owner: lavender
-        group: lavender
+        owner: jackaltx
+        group: jackaltx
 
     - name: Ensure authorized_keys has correct permissions
       file:
-        path: /home/lavender/.ssh/authorized_keys
+        path: /home/jackaltx/.ssh/authorized_keys
         state: file
         mode: "0600"
-        owner: lavender
-        group: lavender
+        owner: jackaltx
+        group: jackaltx

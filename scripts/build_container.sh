@@ -163,7 +163,7 @@ echo "Creating final image..."
 podman commit \
     -f docker \
     --author "Created by build script" \
-    --message "${CONTAINER_TYPE} with SSH and lavender user" \
+    --message "${CONTAINER_TYPE} with SSH and jackaltx user" \
     test_container "${REGISTRY_IMAGE}:latest"
 
 echo "Pushing to registry..."

@@ -3,7 +3,7 @@ all:
     rocky_container:
       ansible_connection: community.docker.docker
       ansible_host: test_container
-      ansible_user: root
+      ansible_user: jackaltx
       ansible_python_interpreter: python3
       ansible_remote_tmp: /tmp/ansible-${USER}
       ansible_pipelining: true
