@@ -154,14 +154,15 @@ podman run -d \
 #################################################################
 # Wait for container to start
 #
-log INFO "Waiting for container to be healthy..."
-for i in {1..30}; do
-    if podman exec test_container systemctl is-system-running; then
+log INFO "Waiting for container to initialize..."
+for i in {1..10}; do
+    if podman exec test_container systemctl is-active sshd >/dev/null 2>&1; then
+        log INFO "SSH is ready"
         break
     fi
     sleep 1
-    if [ $i -eq 30 ]; then
-        log ERROR "Container failed to become healthy"
+    if [ $i -eq 10 ]; then
+        log ERROR "SSH failed to start"
         exit 1
     fi
 done
