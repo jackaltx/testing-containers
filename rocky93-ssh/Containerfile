@@ -61,6 +61,29 @@ RUN ssh-keygen -A && \
     chmod 600 /etc/ssh/ssh_host_* && \
     systemctl enable sshd
 
+# Add to Containerfiles - Enhanced SSH Security
+RUN sed -i 's/#MaxAuthTries.*/MaxAuthTries 3/' /etc/ssh/sshd_config && \
+    sed -i 's/#LoginGraceTime.*/LoginGraceTime 60/' /etc/ssh/sshd_config && \
+    sed -i 's/#AllowAgentForwarding.*/AllowAgentForwarding no/' /etc/ssh/sshd_config && \
+    echo "AllowUsers jackaltx" >> /etc/ssh/sshd_config
+
+# Add to Containerfiles - Enhanced Sudo Configuration
+RUN echo "Defaults timestamp_timeout=15" >> /etc/sudoers.d/timeout && \
+    echo "Defaults logfile=/var/log/sudo.log" >> /etc/sudoers.d/logging && \
+    echo "Defaults use_pty" >> /etc/sudoers.d/pty && \
+    echo "Defaults secure_path=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> /etc/sudoers.d/secure_path
+
+# Add to Containerfiles - Secure Important Directories
+RUN chmod 700 /etc/sudoers.d && \
+    chmod 440 /etc/sudoers.d/* && \
+    find /etc/ssh -type f -name 'ssh_host_*_key' -exec chmod 600 {} \; && \
+    find /etc/ssh -type f -name 'ssh_host_*_key.pub' -exec chmod 644 {} \;
+
+# Add to Containerfiles - System Security Settings
+RUN echo "umask 027" >> /etc/profile && \
+    echo "TMOUT=900" >> /etc/profile && \
+    echo "readonly TMOUT" >> /etc/profile
+
 # Verify permissions
 RUN ls -l /usr/bin/sudo && \
     ls -l /etc/sudoers.d/jackaltx && \

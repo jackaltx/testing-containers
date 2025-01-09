@@ -22,7 +22,8 @@ trap cleanup ERR
 CONTAINER_NAME="test_container"
 CONTAINER_NAME="$CONTAINER_TYPE"
 NETWORK_NAME="monitoring-net"
-SSH_PORT="2222"
+LPORT="${LPORT:-2222}"
+SSH_PORT="$LPORT"
 
 # Validate container type is set
 if [ -z "$CONTAINER_TYPE" ]; then
