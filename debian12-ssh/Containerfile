@@ -15,9 +15,11 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Remove unnecessary system users
+RUN for user in games news; do userdel -r $user 2>/dev/null || true; done
+
 # Mask unnecessary systemd services
 RUN systemctl mask systemd-machine-id-commit.service
-
 
 # I struggle here....I can set the user to the "sudo" group and pass in a password.
 # But this user has no password and thus needs to have "unfettered" access to root.
@@ -45,3 +47,7 @@ RUN echo "$SSH_KEY" > /home/jackaltx/.ssh/authorized_keys && \
 # Configure SSH
 RUN mkdir -p /run/sshd && \
     systemctl enable ssh
+
+# Verify final configuration
+RUN id jackaltx && \
+    sudo -l -U jackaltx

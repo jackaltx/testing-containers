@@ -10,6 +10,23 @@ set -e
 #  Authors:  jackaltx and claude
 #
 
+
+# Add error trapping and cleanup
+cleanup() {
+    echo "Performing cleanup..."
+    podman stop test_container 2>/dev/null || true
+    podman rm test_container 2>/dev/null || true
+    cd "$ORIGINAL_DIR"
+}
+trap cleanup EXIT
+
+# Add structured logging
+log() {
+    local level=$1
+    shift
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $*"
+}
+
 # Configuration can come from environment or defaults
 REGISTRY_HOST=${REGISTRY_HOST:-"gitea.a0a0.org:3001"}
 REGISTRY_USER=${REGISTRY_USER:-"jackaltx"}
@@ -18,47 +35,77 @@ CONTAINER_TYPE=${CONTAINER_TYPE:-""} # rocky93-ssh or debian12-ssh
 REGISTRY_URL="https://${REGISTRY_HOST}"
 ORIGINAL_DIR=$(pwd)
 
-# Validate SSH key
-if [ -z "$SSH_KEY" ]; then
-    echo "Error: SSH_KEY must be provided"
-    exit 1
-fi
-
 #################################################################
 # Validate required input
 #
-if [[ ! "$CONTAINER_TYPE" =~ ^(rocky93-ssh|debian12-ssh)$ ]]; then
-    echo "CONTAINER_TYPE must be either 'rocky93-ssh' or 'debian12-ssh'"
-    echo "Container type was ${CONTAINER_TYPE}"
-    exit 1
-fi
+validate_environment() {
+    if [ -z "$SSH_KEY" ]; then
+        log ERROR "SSH_KEY must be provided"
+        exit 1
+    fi
+
+    if [[ ! "$CONTAINER_TYPE" =~ ^(rocky93-ssh|debian12-ssh)$ ]]; then
+        log ERROR "CONTAINER_TYPE must be either 'rocky93-ssh' or 'debian12-ssh'"
+        log ERROR "Container type was ${CONTAINER_TYPE}"
+        exit 1
+    fi
+}
+validate_environment
 
 #################################################################
 # Registry login
 #
-if [ -n "$CONTAINER_TOKEN" ]; then
-    echo "$CONTAINER_TOKEN" | podman login ghcr.io -u "$REGISTRY_USER" --password-stdin
+login_registry() {
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ -n "$CONTAINER_TOKEN" ]; then
+            if echo "$CONTAINER_TOKEN" | podman login ghcr.io -u "$REGISTRY_USER" --password-stdin; then
+                return 0
+            fi
+        elif [ -n "$GITEA_TOKEN" ]; then
+            if echo "$GITEA_TOKEN" | podman login --username "$REGISTRY_USER" --password-stdin "${REGISTRY_URL}"; then
+                return 0
+            fi
+        else
+            log ERROR "No authentication token provided"
+            exit 1
+        fi
+        log WARN "Login attempt $attempt failed, retrying..."
+        attempt=$((attempt + 1))
+        sleep 2
+    done
+    
+    log ERROR "Failed to login after $max_attempts attempts"
+    exit 1
+}
 
-    # Delete the GitHub package first
+# Perform registry login
+log INFO "Logging into registry..."
+login_registry
+
+
+#################################################################
+# Remove previous version (claude: this needs to be later after it complets)
+#
+
+if [ -n "$CONTAINER_TOKEN" ]; then
+    log INFO "Attempting to delete existing package from Github..."
     curl -X DELETE \
         -H "Authorization: Bearer ${CONTAINER_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
         "https://api.github.com/user/packages/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/versions/latest"
     sleep 5
 
-elif [ -n "$GITEA_TOKEN" ]; then
-    echo "$GITEA_TOKEN" | podman login --username "$REGISTRY_USER" --password-stdin "${REGISTRY_URL}"
-
-    echo "Attempting to delete existing package from Gitea..."
+else    # elif [ -n "$GITEA_TOKEN" ]; then
+    log INFO "Attempting to delete existing package from Gitea..."
     curl -X DELETE \
          -H "Authorization: token ${GITEA_TOKEN}" \
          "${REGISTRY_URL}/api/v1/packages/${REGISTRY_USER}/container/${REGISTRY_REPO}%2F${CONTAINER_TYPE}/latest"
     sleep 5
-
-else
-    echo "No authentication token provided"
-    exit 1
 fi
+
 
 # Set image name based on registry
 if [ -n "$GITHUB_ACTIONS" ]; then
@@ -72,7 +119,7 @@ fi
 #
 BUILD_DIR="${ORIGINAL_DIR}/.working/${CONTAINER_TYPE}"
 mkdir -p "$BUILD_DIR"
-echo "Using build directory: $BUILD_DIR"
+log INFO "Using build directory: $BUILD_DIR"
 
 # Ensure clean state
 rm -rf "${BUILD_DIR:?}"/*
@@ -84,13 +131,16 @@ cd "$BUILD_DIR"
 #################################################################
 # Build container
 #
-echo "Building container..."
-podman build --build-arg SSH_KEY="$SSH_KEY" -t "$CONTAINER_TYPE" .
+log INFO "Building container..."
+if ! podman build --build-arg SSH_KEY="$SSH_KEY" -t "$CONTAINER_TYPE" .; then
+    log ERROR "Container build failed"
+    exit 1
+fi
 
 #################################################################
 # Create and configure test container
 #
-echo "Testing container..."
+log INFO "Starting test container..."
 podman run -d \
     --name test_container \
     --privileged \
@@ -101,10 +151,25 @@ podman run -d \
     "$CONTAINER_TYPE" \
     /sbin/init
 
+#################################################################
 # Wait for container to start
-sleep 5
+#
+log INFO "Waiting for container to be healthy..."
+for i in {1..30}; do
+    if podman exec test_container systemctl is-system-running; then
+        break
+    fi
+    sleep 1
+    if [ $i -eq 30 ]; then
+        log ERROR "Container failed to become healthy"
+        exit 1
+    fi
+done
 
-echo "Setting up container environment..."
+#################################################################
+# Wait for container to be ready
+#
+log INFO "Setting up container environment..."
 podman exec -u root test_container /bin/bash -c 'chown root:root /usr/bin/sudo && chmod 4755 /usr/bin/sudo'
 
 sleep 5  # Wait for container to be ready
@@ -114,38 +179,29 @@ sleep 5  # Wait for container to be ready
 # Add Podman socket setup
 #
 
-echo "Setting up Podman socket..."
+log INFO "Setting up Podman socket..."
 systemctl --user enable podman.socket || true
 systemctl --user start podman.socket || true
 export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
 
 
 #################################################################
-# Run ansible playbook
+# Debug info (Claude adde debug level cutoff with defailt at INFO)
 #
 
-echo "#####################################################################"
-echo "#####################################################################"
-
-
-# Debug output (remove after working)
-echo "#####################################################################"
-echo "Container status:"
+log DEBUG "Container status:"
 podman ps -a
 
-echo "#####################################################################"
-echo "Container logs:"
+log DEBUG "Container logs:"
 podman logs test_container
 
-echo "#####################################################################"
-echo "Ansible inventory:"
+log DEBUG "Ansible inventory:"
 cat inventory.yml
 
-echo "#####################################################################"
-echo "#####################################################################"
-
-# ................................................................
-echo "Configuring container..."
+#################################################################
+#  Run ansible playbook
+#
+log INFO "Configuring container..."
 if [ -n "$GITHUB_ACTIONS" ]; then
     # ansible-galaxy collection install community.docker
     ansible-playbook -i inventory.yml playbook.yml
@@ -159,25 +215,28 @@ fi
 #################################################################
 # Create and push final image
 #
-echo "Creating final image..."
+log INFO "Creating final image..."
 podman commit \
     -f docker \
     --author "Created by build script" \
     --message "${CONTAINER_TYPE} with SSH and jackaltx user" \
     test_container "${REGISTRY_IMAGE}:latest"
 
-echo "Pushing to registry..."
+log INFO "Pushing to registry..."
 podman push "${REGISTRY_IMAGE}:latest"
 
 #################################################################
 # Clean up
 #
-echo "Cleaning up..."
+log INFO "Cleaning up..."
 cd "$ORIGINAL_DIR"
 podman stop test_container
 podman rm test_container
 
+#################################################################
 # Logout from registry
+#
+log INFO "Logout from registry"
 if [ -n "$GITHUB_ACTIONS" ]; then
     podman logout ghcr.io
 else

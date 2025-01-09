@@ -18,6 +18,9 @@ RUN dnf -y update && \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
+# Remove unnecessary packages and users for security
+RUN for user in games news; do userdel -r $user 2>/dev/null || true; done
+
 # Ensure sudo has correct permissions
 RUN chown 0:0 /usr/bin/sudo && \
     chmod 4755 /usr/bin/sudo && \
