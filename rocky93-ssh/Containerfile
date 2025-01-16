@@ -31,11 +31,12 @@ RUN chown 0:0 /usr/bin/sudo && \
 RUN systemctl mask systemd-machine-id-commit.service
 
 # Create provisioner user and set up sudo
+#
+# https://access.redhat.com/solutions/4060861
+# Lock the password but ensure shadow entry exists
 RUN useradd -m -s /bin/bash jackaltx && \
     echo "jackaltx ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/jackaltx && \
-    chmod 440 /etc/sudoers.d/jackaltx \
-    # https://access.redhat.com/solutions/4060861
-    # Lock the password but ensure shadow entry exists
+    chmod 440 /etc/sudoers.d/jackaltx && \
     passwd -l jackaltx
 
 # Verify the shadow entry exists and is correct
