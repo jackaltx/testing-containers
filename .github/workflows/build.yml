@@ -81,7 +81,7 @@ jobs:
           CONTAINER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
           ANSIBLE_COMMON_ARGS: "-e ansible_connection=community.docker.docker -e ansible_user=root -e ansible_become=false"
-
+          ANSIBLE_GATHERING: "explicit"
         run: ./scripts/build_container.sh
     
       # .................................................................
