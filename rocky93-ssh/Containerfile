@@ -35,6 +35,11 @@ RUN useradd -m -s /bin/bash jackaltx && \
     echo "jackaltx ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/jackaltx && \
     chmod 440 /etc/sudoers.d/jackaltx
 
+# But we might need to explicitly configure PAM for the container environment
+# this is a Rocky on github thing. It cannot use the default user to authenticate.
+RUN dnf -y install pam && \
+    authselect select minimal
+
 # Create ansible temp directory with proper permissions
 RUN mkdir -p /tmp/ansible-jackaltx && \
     chown jackaltx:jackaltx /tmp/ansible-jackaltx && \
