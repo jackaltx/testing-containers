@@ -15,6 +15,7 @@ RUN dnf -y update && \
     sudo \
     systemd \
     openssh-server \
+    iproute \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 

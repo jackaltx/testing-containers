@@ -15,6 +15,7 @@ RUN dnf -y update && \
     sudo \
     systemd \
     openssh-server \
+    iproute \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
@@ -60,7 +61,6 @@ RUN if command -v semanage >/dev/null 2>&1; then \
 RUN ssh-keygen -A && \
     chmod 600 /etc/ssh/ssh_host_* && \
     systemctl enable sshd
-
 
 # Add to Containerfiles - Enhanced SSH Security
 RUN sed -i 's/#MaxAuthTries.*/MaxAuthTries 3/' /etc/ssh/sshd_config && \
