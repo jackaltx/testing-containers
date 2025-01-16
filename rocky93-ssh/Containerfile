@@ -16,8 +16,6 @@ RUN dnf -y update && \
     systemd \
     openssh-server \
     iproute \
-    pam \
-    pam_sudoers \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
