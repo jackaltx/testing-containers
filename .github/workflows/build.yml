@@ -65,6 +65,12 @@ jobs:
 
         # podman system info
 
+      - name: Set up container storage permissions
+        run: |
+          mkdir -p ~/.local/share/containers
+          sudo chown -R $USER:$USER ~/.local/share/containers
+          chmod -R 700 ~/.local/share/containers
+
       # .................................................................
       - name: Build container
         env:
