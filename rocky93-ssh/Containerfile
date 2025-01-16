@@ -16,6 +16,8 @@ RUN dnf -y update && \
     systemd \
     openssh-server \
     iproute \
+    pam \
+    pam_sudoers \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
@@ -37,8 +39,11 @@ RUN useradd -m -s /bin/bash jackaltx && \
 
 # But we might need to explicitly configure PAM for the container environment
 # this is a Rocky on github thing. It cannot use the default user to authenticate.
-RUN dnf -y install pam && \
-    authselect select minimal
+# Add PAM configuration for sudo
+RUN echo "auth       sufficient     pam_unix.so" > /etc/pam.d/sudo && \
+    echo "auth       sufficient     pam_rootok.so" >> /etc/pam.d/sudo && \
+    echo "account    required      pam_unix.so" >> /etc/pam.d/sudo && \
+    echo "session    required      pam_unix.so" >> /etc/pam.d/sudo
 
 # Create ansible temp directory with proper permissions
 RUN mkdir -p /tmp/ansible-jackaltx && \
