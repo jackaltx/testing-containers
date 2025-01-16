@@ -83,12 +83,10 @@ jobs:
           ANSIBLE_COMMON_ARGS: "-e ansible_connection=community.docker.docker -e ansible_user=root -e ansible_become=false"
         run: |
           if [ "${{ matrix.container_type }}" = "rocky93-ssh" ]; then
-            ANSIBLE_ARGS="--skip-tags gather_facts"
-          else
-            ANSIBLE_ARGS=""
+            export ANSIBLE_COMMON_ARGS="$ANSIBLE_COMMON_ARGS --gather=no"
           fi
-          ANSIBLE_COMMON_ARGS="$ANSIBLE_COMMON_ARGS $ANSIBLE_ARGS" ./scripts/build_container.sh
-
+          ./scripts/build_container.sh
+          
       # .................................................................
       - name: Upload logs on failure
         if: failure()
