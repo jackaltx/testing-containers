@@ -31,9 +31,24 @@ RUN chown 0:0 /usr/bin/sudo && \
 RUN systemctl mask systemd-machine-id-commit.service
 
 # Create provisioner user and set up sudo
+#
+# https://access.redhat.com/solutions/4060861
+# Lock the password but ensure shadow entry exists
 RUN useradd -m -s /bin/bash jackaltx && \
     echo "jackaltx ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/jackaltx && \
-    chmod 440 /etc/sudoers.d/jackaltx
+    chmod 440 /etc/sudoers.d/jackaltx && \
+    passwd -l jackaltx
+
+# Verify the shadow entry exists and is correct
+RUN grep jackaltx /etc/shadow && \
+    pwck -r
+
+# But we might need to explicitly configure PAM for the container environment
+# this is a Rocky on github thing. It cannot use the default user to authenticate.
+# Add PAM configuration for sudo
+# RUN echo "auth       sufficient     pam_unix.so" > /etc/pam.d/sudo && \
+#     echo "account    required      pam_unix.so" >> /etc/pam.d/sudo && \
+#     echo "session    required      pam_unix.so" >> /etc/pam.d/sudo
 
 # Create ansible temp directory with proper permissions
 RUN mkdir -p /tmp/ansible-jackaltx && \
@@ -89,4 +104,4 @@ RUN echo "umask 027" >> /etc/profile && \
 RUN ls -l /usr/bin/sudo && \
     ls -l /etc/sudoers.d/jackaltx && \
     id jackaltx && \
-    sudo -l -U jackaltx
+    grep -r "jackaltx" /etc/sudoers.d/

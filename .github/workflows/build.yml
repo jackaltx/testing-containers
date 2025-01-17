@@ -18,9 +18,10 @@ env:
   REGISTRY_USER: ${{ github.actor }}
   REGISTRY_REPO: testing-containers
 
+# https://docs.github.com/en/actions/writing-workflows/choosing-where-your-workflow-runs/choosing-the-runner-for-a-job
 jobs:
   build-containers:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
