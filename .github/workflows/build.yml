@@ -7,6 +7,7 @@ on:
     paths:
       - 'debian12-ssh/**'
       - 'rocky93-ssh/**'
+      - 'debian24-ssh/**'
       - 'scripts/**'
       - '.github/workflows/build.yml'
   pull_request:
@@ -28,7 +29,7 @@ jobs:
 
     strategy:
       matrix:
-        container_type: [ 'debian12-ssh', 'rocky93-ssh' ]
+        container_type: [ 'debian12-ssh', 'rocky93-ssh', 'ubuntu22-ssh' ]
       fail-fast: false
 
     steps:

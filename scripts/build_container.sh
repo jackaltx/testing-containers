@@ -44,8 +44,8 @@ validate_environment() {
         exit 1
     fi
 
-    if [[ ! "$CONTAINER_TYPE" =~ ^(rocky93-ssh|debian12-ssh)$ ]]; then
-        log ERROR "CONTAINER_TYPE must be either 'rocky93-ssh' or 'debian12-ssh'"
+    if [[ ! "$CONTAINER_TYPE" =~ ^(rocky93-ssh|debian12-ssh|ubuntu24-ssh)$ ]]; then
+        log ERROR "CONTAINER_TYPE must be one of: 'rocky93-ssh', 'debian12-ssh', or 'ubuntu24-ssh'"
         log ERROR "Container type was ${CONTAINER_TYPE}"
         exit 1
     fi
