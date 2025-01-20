@@ -29,7 +29,7 @@ jobs:
 
     strategy:
       matrix:
-        container_type: [ 'debian12-ssh', 'rocky93-ssh', 'ubuntu22-ssh' ]
+        container_type: [ 'debian12-ssh', 'rocky93-ssh', 'ubuntu24-ssh' ]
       fail-fast: false
 
     steps:
