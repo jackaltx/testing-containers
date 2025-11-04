@@ -5,7 +5,7 @@ set -e
 # Replaces the complex build_container.sh with pure Containerfile approach
 
 # Configuration from environment
-CONTAINER_TYPE="${CONTAINER_TYPE:-debian12-ssh}"
+CONTAINER_TYPE="${1:-${CONTAINER_TYPE:-debian12-ssh}}"
 REGISTRY_HOST="${REGISTRY_HOST:-ghcr.io}"
 REGISTRY_USER="${REGISTRY_USER:-jackaltx}"
 REGISTRY_REPO="${REGISTRY_REPO:-testing-containers}"

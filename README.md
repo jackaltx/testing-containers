@@ -45,42 +45,49 @@ TAG_LATEST        # Tag as 'latest' (default: false)
 
 ## Usage Examples
 
-### Build Debian 12
-
+The `build.sh` script accepts the container type as a command-line argument:
 ```bash
-export CONTAINER_TOKEN=ghp_your_token_here
-export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-export CONTAINER_TYPE=debian12-ssh
-./build.sh
+./build.sh <container-type>
 ```
 
-### Build Rocky Linux 9.3
+Where `<container-type>` is one of: `debian12-ssh`, `rocky93-ssh`, `ubuntu24-ssh`
+
+**Important**: Only ONE registry is used per build, determined by `REGISTRY_HOST`:
+- `ghcr.io` (default) - requires `CONTAINER_TOKEN` (GitHub Personal Access Token)
+- Custom Gitea - requires `GITEA_TOKEN`
+
+### Build for GitHub Container Registry (ghcr.io)
 
 ```bash
+# Required: GitHub Personal Access Token with write:packages scope
 export CONTAINER_TOKEN=ghp_your_token_here
 export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-export CONTAINER_TYPE=rocky93-ssh
-./build.sh
+
+# Build Debian 12 (automatically built by GitHub Actions)
+./build.sh debian12-ssh
+
+# Build Rocky Linux 9.3 (manual build only)
+./build.sh rocky93-ssh
+
+# Build Ubuntu 24.04 LTS (manual build only)
+./build.sh ubuntu24-ssh
 ```
 
-### Build Ubuntu 24.10
+**Note**: GitHub Actions CI only builds `debian12-ssh` automatically. Other distributions must be built manually to reduce CI time.
+
+### Build for Gitea Registry
 
 ```bash
-export CONTAINER_TOKEN=ghp_your_token_here
-export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-export CONTAINER_TYPE=ubuntu24-ssh
-./build.sh
-```
-
-### Custom Registry (Gitea)
-
-```bash
+# Required: Gitea access token
 export REGISTRY_HOST=gitea.example.com:3001
 export REGISTRY_USER=your_username
-export GITEA_TOKEN=your_token_here
+export GITEA_TOKEN=your_gitea_token
 export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-export CONTAINER_TYPE=debian12-ssh
-./build.sh
+
+# Build any distribution
+./build.sh debian12-ssh
+./build.sh rocky93-ssh
+./build.sh ubuntu24-ssh
 ```
 
 ## Container Details
@@ -102,8 +109,8 @@ All containers include:
 - Package manager: dnf
 - SSH service: sshd
 
-### Ubuntu 24.10 (ubuntu24-ssh)
-- Base: `ubuntu:24.10`
+### Ubuntu 24.04 LTS (ubuntu24-ssh)
+- Base: `ubuntu:24.04`
 - Package manager: apt
 - SSH service: ssh
 

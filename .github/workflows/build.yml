@@ -29,7 +29,9 @@ jobs:
 
     strategy:
       matrix:
-        container_type: [ 'debian12-ssh', 'rocky93-ssh', 'ubuntu24-ssh' ]
+        # Only building debian12-ssh in CI to reduce build time
+        # Add 'rocky93-ssh', 'ubuntu24-ssh' to build additional images
+        container_type: [ 'debian12-ssh' ]
       fail-fast: false
 
     steps:
