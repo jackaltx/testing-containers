@@ -18,18 +18,16 @@ cleanup() {
 # Set up error handling
 trap cleanup ERR
 
-# Configuration
-CONTAINER_NAME="test_container"
-CONTAINER_NAME="$CONTAINER_TYPE"
+# Configuration - user must set these
+CONTAINER_TYPE="${CONTAINER_TYPE:-debian12-ssh}"
+IMAGE="${IMAGE:-ghcr.io/jackaltx/testing-containers:${CONTAINER_TYPE}}"
+CONTAINER_NAME="${CONTAINER_NAME:-test_container}"
 NETWORK_NAME="monitoring-net"
 LPORT="${LPORT:-2222}"
 SSH_PORT="$LPORT"
 
-# Validate container type is set
-if [ -z "$CONTAINER_TYPE" ]; then
-    log "ERROR: CONTAINER_TYPE must be set"
-    exit 1
-fi
+log "Using image: $IMAGE"
+log "Container name: $CONTAINER_NAME"
 
 # Create network if it doesn't exist
 if ! podman network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
@@ -58,7 +56,7 @@ podman run -d \
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     --cgroupns=host \
     -p "${SSH_PORT}:22" \
-    "$CONTAINER_TYPE" \
+    "$IMAGE" \
     /sbin/init
 
 # Wait for container to be ready

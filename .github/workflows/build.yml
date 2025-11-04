@@ -7,8 +7,8 @@ on:
     paths:
       - 'debian12-ssh/**'
       - 'rocky93-ssh/**'
-      - 'debian24-ssh/**'
-      - 'scripts/**'
+      - 'ubuntu24-ssh/**'
+      - 'build.sh'
       - '.github/workflows/build.yml'
   pull_request:
     branches: [ "main" ]
@@ -33,48 +33,15 @@ jobs:
       fail-fast: false
 
     steps:
-      # .................................................................
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # .................................................................
-      - name: Set up environment variables
-        run: |
-          echo "CONTAINER_TOKEN=${{ secrets.CONTAINER_TOKEN }}" >> $GITHUB_ENV
-          echo "CONTAINER_TYPE=${{ matrix.container_type }}" >> $GITHUB_ENV
-
-      # .................................................................
-      - name: Install dependencies
+      - name: Install Podman
         run: |
           sudo apt-get update
-          sudo apt-get install -y podman ansible
-          # Install collection in the GitHub workspace
-          ansible-galaxy collection install -p ./ community.docker
+          sudo apt-get install -y podman
 
-      # .................................................................
-      - name: Configure container environment
-        run: |
-          mkdir -p ~/.config/containers ~/.local/share/containers
-          chmod 700 ~/.config/containers ~/.local/share/containers
-          cat > ~/.config/containers/containers.conf << 'EOL'
-          [containers]
-          default_capabilities = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID", "KILL", "NET_BIND_SERVICE", "SETFCAP", "SETGID", "SETPCAP", "SETUID", "SYS_CHROOT"]
-          [engine]
-          runtime = "crun"
-          cgroup_manager = "cgroupfs"
-          events_logger = "journald"
-          EOL
-
-        # podman system info
-
-      - name: Set up container storage permissions
-        run: |
-          mkdir -p ~/.local/share/containers
-          sudo chown -R $USER:$USER ~/.local/share/containers
-          chmod -R 700 ~/.local/share/containers
-
-      # .................................................................
-      - name: Build container
+      - name: Build and push container
         env:
           REGISTRY_HOST: ghcr.io
           REGISTRY_USER: ${{ github.repository_owner }}
@@ -82,18 +49,4 @@ jobs:
           CONTAINER_TYPE: ${{ matrix.container_type }}
           CONTAINER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
-          ANSIBLE_COMMON_ARGS: "-e ansible_connection=community.docker.docker"
-          # ANSIBLE_COMMON_ARGS: "-e ansible_connection=community.docker.docker -e ansible_user=root -e ansible_become=false"
-        run: ./scripts/build_container.sh
-    
-      # .................................................................
-      - name: Upload logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs-${{ matrix.container-type }}
-          path: |
-            .working/${{ matrix.container-type }}/
-            ~/.local/share/containers/
-          if-no-files-found: warn
-          include-hidden-files: false
+        run: ./build.sh

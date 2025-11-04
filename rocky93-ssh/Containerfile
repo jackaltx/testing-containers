@@ -16,6 +16,10 @@ RUN dnf -y update && \
     systemd \
     openssh-server \
     iproute \
+    vim \
+    wget \
+    git \
+    tmux \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 

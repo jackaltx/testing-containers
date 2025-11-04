@@ -1,6 +1,6 @@
 # Testing Containers
 
-This repository provides tools for building container images suitable for testing Ansible roles. It includes support for both Debian and Rocky Linux-based containers with SSH and systemd support.
+Base container images for testing Ansible roles via Molecule. Provides current, minimal, Ansible-ready platforms for Debian, Rocky Linux, and Ubuntu.
 
 ## Features
 
@@ -8,138 +8,148 @@ This repository provides tools for building container images suitable for testin
 - SSH access with configurable keys
 - systemd support
 - Ansible-ready with Python and required dependencies
-- Support for both Debian and Rocky Linux base images
-- Registry integration (Gitea and GitHub Container Registry support)
+- Current packages (updated at build time)
+- Stock configuration with minimal modifications
+- Registry integration (Gitea and GitHub Container Registry)
 
 ## Prerequisites
 
 - Podman
-- Ansible with community.docker collection
 - SSH key pair for container access
 - Registry access token (Gitea or GitHub)
 
 ## Installation
 
-1. Install required packages:
 ```bash
 # For Debian/Ubuntu
-sudo apt-get install podman ansible
+sudo apt-get install podman
 
 # For Fedora/RHEL
-sudo dnf install podman ansible
-```
-
-2. Install required Ansible collection:
-```bash
-ansible-galaxy collection install community.docker
+sudo dnf install podman
 ```
 
 ## Configuration
 
-The script can be configured through environment variables:
+Environment variables:
 
 ```bash
-REGISTRY_HOST      # Registry hostname (default: gitea.a0a0.org:3001)
+REGISTRY_HOST      # Registry hostname (default: ghcr.io)
 REGISTRY_USER      # Registry username (default: jackaltx)
 REGISTRY_REPO      # Repository name (default: testing-containers)
-CONTAINER_TYPE     # Container type (debian12-ssh or rocky93-ssh)
-SSH_KEY           # SSH public key (default: ~/.ssh/id_ed25519.pub)
-GITEA_TOKEN       # Gitea access token
-GITHUB_TOKEN      # GitHub access token (alternative to GITEA_TOKEN)
+CONTAINER_TYPE     # debian12-ssh, rocky93-ssh, or ubuntu24-ssh
+SSH_KEY           # SSH public key (required)
+CONTAINER_TOKEN   # GitHub token (for ghcr.io)
+GITEA_TOKEN       # Gitea token (for Gitea registry)
+TAG_LATEST        # Tag as 'latest' (default: false)
 ```
 
 ## Usage Examples
 
-### Building a Debian Container
+### Build Debian 12
 
 ```bash
-# Using Gitea registry
-export GITEA_TOKEN=your_token_here
-./build_container.sh CONTAINER_TYPE=debian12-ssh
-
-# Using GitHub registry
-export GITHUB_TOKEN=your_token_here
-export GITHUB_REPOSITORY=your_username/your_repo
-./build_container.sh CONTAINER_TYPE=debian12-ssh
+export CONTAINER_TOKEN=ghp_your_token_here
+export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+export CONTAINER_TYPE=debian12-ssh
+./build.sh
 ```
 
-### Building a Rocky Linux Container
+### Build Rocky Linux 9.3
 
 ```bash
-export GITEA_TOKEN=your_token_here
-./build_container.sh CONTAINER_TYPE=rocky93-ssh
+export CONTAINER_TOKEN=ghp_your_token_here
+export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+export CONTAINER_TYPE=rocky93-ssh
+./build.sh
 ```
 
-### Custom SSH Key
+### Build Ubuntu 24.10
 
 ```bash
-export GITEA_TOKEN=your_token_here
-export SSH_KEY=$(cat ~/.ssh/custom_key.pub)
-./build_container.sh CONTAINER_TYPE=debian12-ssh
+export CONTAINER_TOKEN=ghp_your_token_here
+export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+export CONTAINER_TYPE=ubuntu24-ssh
+./build.sh
 ```
 
-### Custom Registry
+### Custom Registry (Gitea)
 
 ```bash
-export GITEA_TOKEN=your_token_here
-export REGISTRY_HOST=custom.registry.com
+export REGISTRY_HOST=gitea.example.com:3001
 export REGISTRY_USER=your_username
-export REGISTRY_REPO=your_repo
-./build_container.sh CONTAINER_TYPE=debian12-ssh
+export GITEA_TOKEN=your_token_here
+export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+export CONTAINER_TYPE=debian12-ssh
+./build.sh
 ```
 
 ## Container Details
 
-### Debian Container (debian12-ssh)
-- Base Image: debian:12
-- Included Packages:
-  - python3
-  - sudo
-  - systemd
-  - openssh-server
-  - python3-pip
+All containers include:
+- Python 3 (for Ansible)
+- OpenSSH server (key-based auth)
+- systemd (for service management)
+- sudo (passwordless for jackaltx user)
+- vim, wget, git, tmux (utilities)
 
-### Rocky Linux Container (rocky93-ssh)
-- Base Image: rockylinux:9.3
-- Included Packages:
-  - python3
-  - sudo
-  - systemd
-  - openssh-server
+### Debian 12 (debian12-ssh)
+- Base: `debian:12`
+- Package manager: apt
+- SSH service: ssh
 
-## Testing Containers
+### Rocky Linux 9.3 (rocky93-ssh)
+- Base: `rockylinux:9.3`
+- Package manager: dnf
+- SSH service: sshd
 
-The built containers can be tested using Ansible:
+### Ubuntu 24.10 (ubuntu24-ssh)
+- Base: `ubuntu:24.10`
+- Package manager: apt
+- SSH service: ssh
+
+## Using Containers
+
+### Pull from Registry
 
 ```bash
-# Pull the container
-podman pull gitea.a0a0.org:3001/jackaltx/testing-containers/debian12-ssh:latest
+# GitHub Container Registry
+podman pull ghcr.io/jackaltx/testing-containers:debian12-ssh
 
-# Run the container
+# Gitea Registry
+podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky93-ssh
+```
+
+### Run Container
+
+```bash
 podman run -d \
     --name test_container \
     --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     -p 2222:22 \
-    debian12-ssh \
+    ghcr.io/jackaltx/testing-containers:debian12-ssh \
     /sbin/init
-
-# Test with Ansible
-ansible-playbook -i inventory.yml your_playbook.yml
 ```
 
-Example inventory.yml:
+### SSH Access
+
+```bash
+ssh -p 2222 jackaltx@localhost
+```
+
+### Molecule Testing
+
+These containers are designed for use with Molecule:
+
 ```yaml
-all:
-  hosts:
-    debian_container:
-      ansible_connection: community.docker.docker
-      ansible_host: test_container
-      ansible_user: jackaltx
-      ansible_become: true
-      ansible_python_interpreter: python3
-      ansible_remote_tmp: /tmp/ansible-${USER}
-      ansible_pipelining: true
+# molecule.yml
+platforms:
+  - name: instance
+    image: ghcr.io/jackaltx/testing-containers:debian12-ssh
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    command: /sbin/init
 ```
 
 ## Troubleshooting
