@@ -178,7 +178,7 @@ ssh -p 2222 jackaltx@localhost
 3. Registry Authentication Issues
 ```bash
 # Verify token
-podman login gitea.a0a0.org:3001
+podman login gitea.example.com:3001
 
 # Check auth file
 cat ~/.config/containers/auth.json
