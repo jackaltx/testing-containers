@@ -12,7 +12,7 @@ Base container images for testing Ansible roles via Molecule. Provides current, 
 
 **Command Syntax**: `./build.sh <container-type>`
 
-Where `<container-type>` is: `debian12-ssh`, `rocky93-ssh`, or `ubuntu24-ssh`
+Where `<container-type>` is: `debian12-ssh`, `rocky9x-ssh`, or `ubuntu24-ssh`
 
 **Registry Selection**: Only ONE registry per build (determined by `REGISTRY_HOST`)
 - `ghcr.io` (default) - requires `CONTAINER_TOKEN`
@@ -22,14 +22,14 @@ Where `<container-type>` is: `debian12-ssh`, `rocky93-ssh`, or `ubuntu24-ssh`
 # Build and push to GitHub Container Registry (ghcr.io) - DEFAULT
 export CONTAINER_TOKEN=ghp_your_token_here
 export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-./build.sh debian12-ssh    # or rocky93-ssh, ubuntu24-ssh
+./build.sh debian12-ssh    # or rocky9x-ssh, ubuntu24-ssh
 
 # Build and push to Gitea registry
 export REGISTRY_HOST=gitea.example.com:3001
 export REGISTRY_USER=your_username
 export GITEA_TOKEN=your_token_here
 export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-./build.sh rocky93-ssh
+./build.sh rocky9x-ssh
 
 # Tag as 'latest' when building
 export TAG_LATEST=true
@@ -45,8 +45,8 @@ export TAG_LATEST=true
 ./run-podman.sh
 
 # Run specific container type
-export CONTAINER_TYPE=rocky93-ssh
-export IMAGE=ghcr.io/jackaltx/testing-containers:rocky93-ssh
+export CONTAINER_TYPE=rocky9x-ssh
+export IMAGE=ghcr.io/jackaltx/testing-containers:rocky9x-ssh
 export LPORT=2223
 ./run-podman.sh
 
@@ -77,7 +77,7 @@ podman exec test_container systemctl status sshd
 ### Cleanup
 
 ```bash
-# Quick cleanup (removes test_container and rocky93-ssh image)
+# Quick cleanup (removes test_container and rocky9x-ssh image)
 ./cleanup-podman.sh
 
 # Manual cleanup
@@ -97,10 +97,10 @@ Three base images are provided, each optimized for Molecule testing:
    - SSH service: ssh
    - Base image: `debian:12`
 
-2. **rocky93-ssh** - Rocky Linux 9.3
+2. **rocky9x-ssh** - Rocky Linux 9.x
    - Package manager: dnf
    - SSH service: sshd
-   - Base image: `rockylinux:9.3`
+   - Base image: `rockylinux/rockylinux:9`
 
 3. **ubuntu24-ssh** - Ubuntu 24.04 LTS
    - Package manager: apt
@@ -131,8 +131,8 @@ All containers include:
 testing-containers/
 ├── debian12-ssh/
 │   └── Containerfile      # Debian 12 container definition
-├── rocky93-ssh/
-│   └── Containerfile      # Rocky Linux 9.3 container definition
+├── rocky9x-ssh/
+│   └── Containerfile      # Rocky Linux 9.x container definition
 ├── ubuntu24-ssh/
 │   └── Containerfile      # Ubuntu 24.04 LTS container definition
 ├── build.sh               # Build and push to registry
@@ -144,7 +144,7 @@ testing-containers/
 ## Environment Variables
 
 ### Build Configuration
-- `CONTAINER_TYPE` - Container to build: `debian12-ssh`, `rocky93-ssh`, `ubuntu24-ssh`
+- `CONTAINER_TYPE` - Container to build: `debian12-ssh`, `rocky9x-ssh`, `ubuntu24-ssh`
 - `SSH_KEY` - **Required** - Public SSH key to inject into container
 - `REGISTRY_HOST` - Registry hostname (default: `ghcr.io`)
 - `REGISTRY_USER` - Registry username (default: `jackaltx`)
@@ -205,7 +205,7 @@ platforms:
 
 ```bash
 # Test across all distributions
-for distro in debian12-ssh rocky93-ssh ubuntu24-ssh; do
+for distro in debian12-ssh rocky9x-ssh ubuntu24-ssh; do
   export CONTAINER_TYPE=$distro
   export LPORT=$((2222 + ${distro##*[!0-9]}))
   ./run-podman.sh
@@ -237,7 +237,7 @@ podman pull ghcr.io/jackaltx/testing-containers:debian12-ssh
 echo $GITEA_TOKEN | podman login gitea.example.com:3001 -u username --password-stdin
 
 # Pull image
-podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky93-ssh
+podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky9x-ssh
 
 # Push custom tag
 podman tag <image> gitea.example.com:3001/jackaltx/testing-containers:custom-tag

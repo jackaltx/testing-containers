@@ -36,7 +36,7 @@ Environment variables:
 REGISTRY_HOST      # Registry hostname (default: ghcr.io)
 REGISTRY_USER      # Registry username (default: jackaltx)
 REGISTRY_REPO      # Repository name (default: testing-containers)
-CONTAINER_TYPE     # debian12-ssh, rocky93-ssh, or ubuntu24-ssh
+CONTAINER_TYPE     # debian12-ssh, rocky9x-ssh, or ubuntu24-ssh
 SSH_KEY           # SSH public key (required)
 CONTAINER_TOKEN   # GitHub token (for ghcr.io)
 GITEA_TOKEN       # Gitea token (for Gitea registry)
@@ -50,7 +50,7 @@ The `build.sh` script accepts the container type as a command-line argument:
 ./build.sh <container-type>
 ```
 
-Where `<container-type>` is one of: `debian12-ssh`, `rocky93-ssh`, `ubuntu24-ssh`
+Where `<container-type>` is one of: `debian12-ssh`, `rocky9x-ssh`, `ubuntu24-ssh`
 
 **Important**: Only ONE registry is used per build, determined by `REGISTRY_HOST`:
 - `ghcr.io` (default) - requires `CONTAINER_TOKEN` (GitHub Personal Access Token)
@@ -66,8 +66,8 @@ export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
 # Build Debian 12 (automatically built by GitHub Actions)
 ./build.sh debian12-ssh
 
-# Build Rocky Linux 9.3 (manual build only)
-./build.sh rocky93-ssh
+# Build Rocky Linux 9.x (manual build only)
+./build.sh rocky9x-ssh
 
 # Build Ubuntu 24.04 LTS (manual build only)
 ./build.sh ubuntu24-ssh
@@ -86,7 +86,7 @@ export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
 
 # Build any distribution
 ./build.sh debian12-ssh
-./build.sh rocky93-ssh
+./build.sh rocky9x-ssh
 ./build.sh ubuntu24-ssh
 ```
 
@@ -104,8 +104,8 @@ All containers include:
 - Package manager: apt
 - SSH service: ssh
 
-### Rocky Linux 9.3 (rocky93-ssh)
-- Base: `rockylinux:9.3`
+### Rocky Linux 9.x (rocky9x-ssh)
+- Base: `rockylinux/rockylinux:9`
 - Package manager: dnf
 - SSH service: sshd
 
@@ -123,7 +123,7 @@ All containers include:
 podman pull ghcr.io/jackaltx/testing-containers:debian12-ssh
 
 # Gitea Registry
-podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky93-ssh
+podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky9x-ssh
 ```
 
 ### Run Container

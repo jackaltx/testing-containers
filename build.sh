@@ -20,11 +20,11 @@ fi
 
 # Validate container type
 case "$CONTAINER_TYPE" in
-    debian12-ssh|rocky93-ssh|ubuntu24-ssh)
+    debian12-ssh|rocky9x-ssh|ubuntu24-ssh)
         echo "Building $CONTAINER_TYPE..."
         ;;
     *)
-        echo "Error: CONTAINER_TYPE must be one of: debian12-ssh, rocky93-ssh, ubuntu24-ssh"
+        echo "Error: CONTAINER_TYPE must be one of: debian12-ssh, rocky9x-ssh, ubuntu24-ssh"
         exit 1
         ;;
 esac

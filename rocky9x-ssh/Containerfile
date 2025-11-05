@@ -5,7 +5,7 @@
 #  we need to create a user that will automatically sudo.
 #  So honestly..I am conflicted.
 #
-FROM rockylinux:9.3
+FROM rockylinux/rockylinux:9
 
 # Update and install required packages
 RUN dnf -y update && \
