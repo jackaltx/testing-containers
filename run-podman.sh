@@ -20,7 +20,28 @@ trap cleanup ERR
 
 # Configuration - user must set these
 CONTAINER_TYPE="${CONTAINER_TYPE:-debian12-ssh}"
-IMAGE="${IMAGE:-ghcr.io/jackaltx/testing-containers:${CONTAINER_TYPE}}"
+
+# Parse CONTAINER_TYPE into DISTRO and VERSION for new naming pattern
+case "$CONTAINER_TYPE" in
+    debian12-ssh)
+        DISTRO="debian"
+        VERSION="12"
+        ;;
+    rocky9x-ssh)
+        DISTRO="rocky"
+        VERSION="9"
+        ;;
+    ubuntu24-ssh)
+        DISTRO="ubuntu"
+        VERSION="24"
+        ;;
+    *)
+        echo "Error: CONTAINER_TYPE must be one of: debian12-ssh, rocky9x-ssh, ubuntu24-ssh"
+        exit 1
+        ;;
+esac
+
+IMAGE="${IMAGE:-ghcr.io/jackaltx/testing-containers/${DISTRO}-ssh:${VERSION}}"
 CONTAINER_NAME="${CONTAINER_NAME:-test_container}"
 NETWORK_NAME="monitoring-net"
 LPORT="${LPORT:-2222}"

@@ -11,17 +11,19 @@ REGISTRY_USER="${REGISTRY_USER:-jackaltx}"
 REGISTRY_REPO="${REGISTRY_REPO:-testing-containers}"
 SSH_KEY="${SSH_KEY:?SSH_KEY environment variable is required}"
 
-# Determine authentication token
-if [ "$REGISTRY_HOST" = "ghcr.io" ]; then
-    TOKEN="${CONTAINER_TOKEN:?CONTAINER_TOKEN required for GitHub registry}"
-else
-    TOKEN="${GITEA_TOKEN:?GITEA_TOKEN required for Gitea registry}"
-fi
-
-# Validate container type
+# Parse CONTAINER_TYPE into DISTRO and VERSION
 case "$CONTAINER_TYPE" in
-    debian12-ssh|rocky9x-ssh|ubuntu24-ssh)
-        echo "Building $CONTAINER_TYPE..."
+    debian12-ssh)
+        DISTRO="debian"
+        VERSION="12"
+        ;;
+    rocky9x-ssh)
+        DISTRO="rocky"
+        VERSION="9"
+        ;;
+    ubuntu24-ssh)
+        DISTRO="ubuntu"
+        VERSION="24"
         ;;
     *)
         echo "Error: CONTAINER_TYPE must be one of: debian12-ssh, rocky9x-ssh, ubuntu24-ssh"
@@ -29,11 +31,20 @@ case "$CONTAINER_TYPE" in
         ;;
 esac
 
+# Determine authentication token
+if [ "$REGISTRY_HOST" = "ghcr.io" ]; then
+    TOKEN="${CONTAINER_TOKEN:?CONTAINER_TOKEN required for GitHub registry}"
+else
+    TOKEN="${GITEA_TOKEN:?GITEA_TOKEN required for Gitea registry}"
+fi
+
+echo "Building ${DISTRO}-ssh:${VERSION} from $CONTAINER_TYPE..."
+
 # Login to registry
 echo "$TOKEN" | podman login "$REGISTRY_HOST" -u "$REGISTRY_USER" --password-stdin
 
-# Build image
-IMAGE_TAG="$REGISTRY_HOST/$REGISTRY_USER/$REGISTRY_REPO:$CONTAINER_TYPE"
+# Build image with new sub-repository naming pattern
+IMAGE_TAG="$REGISTRY_HOST/$REGISTRY_USER/$REGISTRY_REPO/${DISTRO}-ssh:${VERSION}"
 
 podman build \
     --build-arg SSH_KEY="$SSH_KEY" \
@@ -46,8 +57,9 @@ podman push "$IMAGE_TAG"
 
 # Tag as latest if requested
 if [ "${TAG_LATEST:-false}" = "true" ]; then
-    podman tag "$IMAGE_TAG" "$REGISTRY_HOST/$REGISTRY_USER/$REGISTRY_REPO:latest"
-    podman push "$REGISTRY_HOST/$REGISTRY_USER/$REGISTRY_REPO:latest"
+    LATEST_TAG="$REGISTRY_HOST/$REGISTRY_USER/$REGISTRY_REPO/${DISTRO}-ssh:latest"
+    podman tag "$IMAGE_TAG" "$LATEST_TAG"
+    podman push "$LATEST_TAG"
 fi
 
 # Logout

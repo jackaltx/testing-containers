@@ -73,7 +73,10 @@ export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
 ./build.sh ubuntu24-ssh
 ```
 
-**Note**: GitHub Actions CI only builds `debian12-ssh` automatically. Other distributions must be built manually to reduce CI time.
+**Note**: GitHub Actions CI builds all distributions automatically and pushes them to separate sub-repositories:
+- `ghcr.io/jackaltx/testing-containers/debian-ssh:12`
+- `ghcr.io/jackaltx/testing-containers/rocky-ssh:9`
+- `ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24`
 
 ### Build for Gitea Registry
 
@@ -120,10 +123,12 @@ All containers include:
 
 ```bash
 # GitHub Container Registry
-podman pull ghcr.io/jackaltx/testing-containers:debian12-ssh
+podman pull ghcr.io/jackaltx/testing-containers/debian-ssh:12
+podman pull ghcr.io/jackaltx/testing-containers/rocky-ssh:9
+podman pull ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24
 
 # Gitea Registry
-podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky9x-ssh
+podman pull gitea.example.com:3001/jackaltx/testing-containers/rocky-ssh:9
 ```
 
 ### Run Container
@@ -134,7 +139,7 @@ podman run -d \
     --privileged \
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     -p 2222:22 \
-    ghcr.io/jackaltx/testing-containers:debian12-ssh \
+    ghcr.io/jackaltx/testing-containers/debian-ssh:12 \
     /sbin/init
 ```
 
@@ -152,7 +157,7 @@ These containers are designed for use with Molecule:
 # molecule.yml
 platforms:
   - name: instance
-    image: ghcr.io/jackaltx/testing-containers:debian12-ssh
+    image: ghcr.io/jackaltx/testing-containers/debian-ssh:12
     privileged: true
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw

@@ -36,7 +36,12 @@ export TAG_LATEST=true
 ./build.sh ubuntu24-ssh
 ```
 
-**Note**: GitHub Actions CI only builds `debian12-ssh` automatically. Other distributions are built manually.
+**Note**: GitHub Actions CI builds all distributions automatically and pushes them to separate sub-repositories:
+- `ghcr.io/jackaltx/testing-containers/debian-ssh:12`
+- `ghcr.io/jackaltx/testing-containers/rocky-ssh:9`
+- `ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24`
+
+This sub-repository structure allows you to delete individual distro images without affecting others.
 
 ### Running Containers
 
@@ -46,7 +51,7 @@ export TAG_LATEST=true
 
 # Run specific container type
 export CONTAINER_TYPE=rocky9x-ssh
-export IMAGE=ghcr.io/jackaltx/testing-containers:rocky9x-ssh
+export IMAGE=ghcr.io/jackaltx/testing-containers/rocky-ssh:9
 export LPORT=2223
 ./run-podman.sh
 
@@ -77,13 +82,16 @@ podman exec test_container systemctl status sshd
 ### Cleanup
 
 ```bash
-# Quick cleanup (removes test_container and rocky9x-ssh image)
+# Quick cleanup (removes test_container and monitoring-net network)
 ./cleanup-podman.sh
 
 # Manual cleanup
 podman stop test_container
 podman rm test_container
 podman network rm monitoring-net
+
+# Remove specific image if needed
+podman rmi ghcr.io/jackaltx/testing-containers/debian-ssh:12
 ```
 
 ## Architecture
@@ -156,7 +164,7 @@ testing-containers/
 - `GITEA_TOKEN` - Gitea access token (for Gitea registry)
 
 ### Runtime Configuration
-- `IMAGE` - Container image to run (default: `ghcr.io/jackaltx/testing-containers:${CONTAINER_TYPE}`)
+- `IMAGE` - Container image to run (default: constructed from CONTAINER_TYPE as `ghcr.io/jackaltx/testing-containers/{distro}-ssh:{version}`)
 - `CONTAINER_NAME` - Container name (default: `test_container`)
 - `LPORT` - Local SSH port mapping (default: `2222`)
 - `NETWORK_NAME` - Podman network name (default: `monitoring-net`)
@@ -192,7 +200,7 @@ These containers are designed for Ansible Molecule testing:
 # molecule.yml
 platforms:
   - name: instance
-    image: ghcr.io/jackaltx/testing-containers:debian12-ssh
+    image: ghcr.io/jackaltx/testing-containers/debian-ssh:12
     privileged: true
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
@@ -223,11 +231,13 @@ podman ps
 # Login
 echo $CONTAINER_TOKEN | podman login ghcr.io -u jackaltx --password-stdin
 
-# Pull image
-podman pull ghcr.io/jackaltx/testing-containers:debian12-ssh
+# Pull images (each distro is a separate sub-repository)
+podman pull ghcr.io/jackaltx/testing-containers/debian-ssh:12
+podman pull ghcr.io/jackaltx/testing-containers/rocky-ssh:9
+podman pull ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24
 
-# List all tags
-# (Use GitHub web interface or API)
+# List all tags for a specific distro
+# (Use GitHub web interface or API - each distro has its own package page)
 ```
 
 ### Gitea Registry
@@ -236,12 +246,12 @@ podman pull ghcr.io/jackaltx/testing-containers:debian12-ssh
 # Login
 echo $GITEA_TOKEN | podman login gitea.example.com:3001 -u username --password-stdin
 
-# Pull image
-podman pull gitea.example.com:3001/jackaltx/testing-containers:rocky9x-ssh
+# Pull image (same sub-repository structure)
+podman pull gitea.example.com:3001/jackaltx/testing-containers/rocky-ssh:9
 
 # Push custom tag
-podman tag <image> gitea.example.com:3001/jackaltx/testing-containers:custom-tag
-podman push gitea.example.com:3001/jackaltx/testing-containers:custom-tag
+podman tag <image> gitea.example.com:3001/jackaltx/testing-containers/debian-ssh:custom
+podman push gitea.example.com:3001/jackaltx/testing-containers/debian-ssh:custom
 ```
 
 ## Troubleshooting
