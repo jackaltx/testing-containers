@@ -6,6 +6,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Base container images for testing Ansible roles via Molecule. Provides current, minimal, Ansible-ready platforms for Debian 12, Rocky Linux 9.3, and Ubuntu 24.04 LTS with SSH access, systemd support, and rootless Podman deployment.
 
+## Quick Build and Test Workflow
+
+### Local Build and Test (Gitea)
+
+```bash
+# 1. Build all images locally and push to Gitea
+source ~/.secrets/LabGiteaToken
+./build.sh debian12-ssh
+./build.sh rocky9x-ssh
+./build.sh ubuntu24-ssh
+
+# 2. Verify images in Gitea
+podman pull gitea.a0a0.org:3001/jackaltx/testing-containers/debian-ssh:12
+podman pull gitea.a0a0.org:3001/jackaltx/testing-containers/rocky-ssh:9
+podman pull gitea.a0a0.org:3001/jackaltx/testing-containers/ubuntu-ssh:24
+
+# 3. Test locally
+export CONTAINER_TYPE=debian12-ssh
+./run-podman.sh
+ssh -p 2222 jackaltx@localhost
+./cleanup-podman.sh
+```
+
+### GitHub CI Build and Test (ghcr.io)
+
+```bash
+# 1. Commit and push changes
+git add -A
+git commit -m "Your commit message"
+git push
+
+# 2. Monitor GitHub Actions
+gh run list --limit 1
+gh run view <run-id>
+# Or visit: https://github.com/jackaltx/testing-containers/actions
+
+# 3. Verify images in ghcr.io
+podman pull ghcr.io/jackaltx/testing-containers/debian-ssh:12
+podman pull ghcr.io/jackaltx/testing-containers/rocky-ssh:9
+podman pull ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24
+```
+
+### Image Management
+
+**Delete individual distro packages:**
+- Gitea: Visit https://gitea.a0a0.org:3001/jackaltx/-/packages → Select package → Settings → Delete
+- ghcr.io: Visit https://github.com/jackaltx?tab=packages → Select package → Package settings → Delete
+
+Each distro is a separate package, allowing granular deletion without affecting others.
+
 ## Core Commands
 
 ### Building Containers
