@@ -1,139 +1,34 @@
 # Testing Containers
 
-Base container images for testing Ansible roles via Molecule. Provides current, minimal, Ansible-ready platforms for Debian, Rocky Linux, and Ubuntu.
+Factory-default container images for Ansible testing. Just SSH and Python - nothing else.
 
-## Features
+## Purpose
 
-- Rootless podman container builds
-- SSH access with configurable keys
-- systemd support
-- Ansible-ready with Python and required dependencies
-- Current packages (updated at build time)
-- Stock configuration with minimal modifications
-- Registry integration (Gitea and GitHub Container Registry)
+Minimal base images for testing Ansible roles with Molecule. Each container provides:
+- **Python 3** - For Ansible
+- **OpenSSH** - Key-based authentication
+- **systemd** - For service management
+- **Factory defaults** - Stock OS configuration, updated packages
 
-## Prerequisites
-
-- Podman
-- SSH key pair for container access
-- Registry access token (Gitea or GitHub)
-
-## Installation
+## Available Images
 
 ```bash
-# For Debian/Ubuntu
-sudo apt-get install podman
-
-# For Fedora/RHEL
-sudo dnf install podman
-```
-
-## Configuration
-
-Environment variables:
-
-```bash
-REGISTRY_HOST      # Registry hostname (default: ghcr.io)
-REGISTRY_USER      # Registry username (default: jackaltx)
-REGISTRY_REPO      # Repository name (default: testing-containers)
-CONTAINER_TYPE     # debian12-ssh, rocky9x-ssh, or ubuntu24-ssh
-SSH_KEY           # SSH public key (required)
-CONTAINER_TOKEN   # GitHub token (for ghcr.io)
-GITEA_TOKEN       # Gitea token (for Gitea registry)
-TAG_LATEST        # Tag as 'latest' (default: false)
-```
-
-## Usage Examples
-
-The `build.sh` script accepts the container type as a command-line argument:
-```bash
-./build.sh <container-type>
-```
-
-Where `<container-type>` is one of: `debian12-ssh`, `rocky9x-ssh`, `ubuntu24-ssh`
-
-**Important**: Only ONE registry is used per build, determined by `REGISTRY_HOST`:
-- `ghcr.io` (default) - requires `CONTAINER_TOKEN` (GitHub Personal Access Token)
-- Custom Gitea - requires `GITEA_TOKEN`
-
-### Build for GitHub Container Registry (ghcr.io)
-
-```bash
-# Required: GitHub Personal Access Token with write:packages scope
-export CONTAINER_TOKEN=ghp_your_token_here
-export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-
-# Build Debian 12 (automatically built by GitHub Actions)
-./build.sh debian12-ssh
-
-# Build Rocky Linux 9.x (manual build only)
-./build.sh rocky9x-ssh
-
-# Build Ubuntu 24.04 LTS (manual build only)
-./build.sh ubuntu24-ssh
-```
-
-**Note**: GitHub Actions CI builds all distributions automatically and pushes them to separate sub-repositories:
-- `ghcr.io/jackaltx/testing-containers/debian-ssh:12`
-- `ghcr.io/jackaltx/testing-containers/rocky-ssh:9`
-- `ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24`
-
-### Build for Gitea Registry
-
-```bash
-# Required: Gitea access token
-export REGISTRY_HOST=gitea.example.com:3001
-export REGISTRY_USER=your_username
-export GITEA_TOKEN=your_gitea_token
-export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-
-# Build any distribution
-./build.sh debian12-ssh
-./build.sh rocky9x-ssh
-./build.sh ubuntu24-ssh
-```
-
-## Container Details
-
-All containers include:
-- Python 3 (for Ansible)
-- OpenSSH server (key-based auth)
-- systemd (for service management)
-- sudo (passwordless for jackaltx user)
-- vim, wget, git, tmux (utilities)
-
-### Debian 12 (debian12-ssh)
-- Base: `debian:12`
-- Package manager: apt
-- SSH service: ssh
-
-### Rocky Linux 9.x (rocky9x-ssh)
-- Base: `rockylinux/rockylinux:9`
-- Package manager: dnf
-- SSH service: sshd
-
-### Ubuntu 24.04 LTS (ubuntu24-ssh)
-- Base: `ubuntu:24.04`
-- Package manager: apt
-- SSH service: ssh
-
-## Using Containers
-
-### Pull from Registry
-
-```bash
-# GitHub Container Registry
+# Pull from GitHub Container Registry
 podman pull ghcr.io/jackaltx/testing-containers/debian-ssh:12
 podman pull ghcr.io/jackaltx/testing-containers/rocky-ssh:9
 podman pull ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24
-
-# Gitea Registry
-podman pull gitea.example.com:3001/jackaltx/testing-containers/rocky-ssh:9
 ```
 
-### Run Container
+| Image | Base | Package Manager |
+|-------|------|-----------------|
+| debian-ssh:12 | debian:12 | apt |
+| rocky-ssh:9 | rockylinux:9 | dnf |
+| ubuntu-ssh:24 | ubuntu:24.04 | apt |
+
+## Quick Start
 
 ```bash
+# Run container
 podman run -d \
     --name test_container \
     --privileged \
@@ -141,17 +36,12 @@ podman run -d \
     -p 2222:22 \
     ghcr.io/jackaltx/testing-containers/debian-ssh:12 \
     /sbin/init
-```
 
-### SSH Access
-
-```bash
+# SSH access
 ssh -p 2222 jackaltx@localhost
 ```
 
-### Molecule Testing
-
-These containers are designed for use with Molecule:
+## Molecule Integration
 
 ```yaml
 # molecule.yml
@@ -164,51 +54,12 @@ platforms:
     command: /sbin/init
 ```
 
-## Troubleshooting
+## Building Images
 
-### Common Issues
+See [build.sh](build.sh) for building and pushing to registries.
 
-1. Podman Permission Issues
 ```bash
-# Set up proper podman configuration
-mkdir -p ~/.config/containers/registries.conf.d
-chmod 700 ~/.config/containers
+export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+export CONTAINER_TOKEN=ghp_your_token_here
+./build.sh debian12-ssh
 ```
-
-2. Ansible Connection Issues
-```bash
-# Verify container is running
-podman ps
-
-# Check container logs
-podman logs test_container
-
-# Verify SSH access
-ssh -p 2222 jackaltx@localhost
-```
-
-3. Registry Authentication Issues
-```bash
-# Verify token
-podman login gitea.example.com:3001
-
-# Check auth file
-cat ~/.config/containers/auth.json
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-MIT
-
-## Authors
-
-- jackaltx
-- claude
