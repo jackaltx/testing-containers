@@ -25,8 +25,12 @@ case "$CONTAINER_TYPE" in
         DISTRO="ubuntu"
         VERSION="24"
         ;;
+    debian13-ssh)
+        DISTRO="debian"
+        VERSION="13"
+        ;;
     *)
-        echo "Error: CONTAINER_TYPE must be one of: debian12-ssh, rocky9x-ssh, ubuntu24-ssh"
+        echo "Error: CONTAINER_TYPE must be one of: debian13-ssh, debian12-ssh, rocky9x-ssh, ubuntu24-ssh"
         exit 1
         ;;
 esac

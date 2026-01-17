@@ -3,15 +3,16 @@ name: Build and Push Containers
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - 'debian12-ssh/**'
-      - 'rocky9x-ssh/**'
-      - 'ubuntu24-ssh/**'
-      - 'build.sh'
-      - '.github/workflows/build.yml'
+      - "debian13-ssh/**"
+      - "debian12-ssh/**"
+      - "rocky9x-ssh/**"
+      - "ubuntu24-ssh/**"
+      - "build.sh"
+      - ".github/workflows/build.yml"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 env:
@@ -31,7 +32,8 @@ jobs:
       matrix:
         # Building all container types
         # Images are pushed to ghcr.io/jackaltx/testing-containers/{distro}-ssh:{version}
-        container_type: [ 'debian12-ssh', 'rocky9x-ssh', 'ubuntu24-ssh' ]
+        container_type:
+          ["debian13-ssh", "debian12-ssh", "rocky9x-ssh", "ubuntu24-ssh"]
       fail-fast: false
 
     steps:
