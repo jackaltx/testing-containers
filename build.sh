@@ -21,6 +21,10 @@ case "$CONTAINER_TYPE" in
         DISTRO="rocky"
         VERSION="9"
         ;;
+    rocky10-ssh)
+        DISTRO="rocky"
+        VERSION="10"
+        ;;
     ubuntu24-ssh)
         DISTRO="ubuntu"
         VERSION="24"

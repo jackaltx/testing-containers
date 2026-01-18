@@ -20,6 +20,7 @@ RUN dnf -y update && \
     wget \
     git \
     tmux \
+    procps-ng \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 

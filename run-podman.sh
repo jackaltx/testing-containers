@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup ERR
 
 # Configuration - user must set these
-CONTAINER_TYPE="${CONTAINER_TYPE:-debian12-ssh}"
+CONTAINER_TYPE="${1:-${CONTAINER_TYPE:-debian12-ssh}}"
 
 # Parse CONTAINER_TYPE into DISTRO and VERSION for new naming pattern
 case "$CONTAINER_TYPE" in
@@ -27,16 +27,24 @@ case "$CONTAINER_TYPE" in
         DISTRO="debian"
         VERSION="12"
         ;;
+    debian13-ssh)
+        DISTRO="debian"
+        VERSION="13"
+        ;;
     rocky9x-ssh)
         DISTRO="rocky"
         VERSION="9"
+        ;;
+   rocky10-ssh)
+        DISTRO="rocky"
+        VERSION="10"
         ;;
     ubuntu24-ssh)
         DISTRO="ubuntu"
         VERSION="24"
         ;;
     *)
-        echo "Error: CONTAINER_TYPE must be one of: debian12-ssh, rocky9x-ssh, ubuntu24-ssh"
+        echo "Error: CONTAINER_TYPE must be one of: debian13-ssh, debian12-ssh, rocky9x-ssh, rocky10-ssh, ubuntu24-ssh"
         exit 1
         ;;
 esac
@@ -47,6 +55,7 @@ NETWORK_NAME="monitoring-net"
 LPORT="${LPORT:-2222}"
 SSH_PORT="$LPORT"
 
+log "Version: $VERSION"
 log "Using image: $IMAGE"
 log "Container name: $CONTAINER_NAME"
 
