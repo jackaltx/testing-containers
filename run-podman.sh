@@ -18,7 +18,7 @@ cleanup() {
 # Set up error handling
 trap cleanup ERR
 
-# Parse command-line flags with defaults
+# Parse command-line flags
 DISTRO=""
 VERSION=""
 while getopts "d:v:" opt; do
@@ -36,9 +36,12 @@ while getopts "d:v:" opt; do
   esac
 done
 
-# Apply defaults if not provided
-DISTRO="${DISTRO:-debian}"
-VERSION="${VERSION:-12}"
+# Validate required arguments
+if [ -z "$DISTRO" ] || [ -z "$VERSION" ]; then
+  echo "Error: -d DISTRO and -v VERSION are required" >&2
+  echo "Usage: $0 -d DISTRO -v VERSION" >&2
+  exit 1
+fi
 
 # Configuration from environment with defaults
 REGISTRY_HOST="${REGISTRY_HOST:-ghcr.io}"
