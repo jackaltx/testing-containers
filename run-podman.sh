@@ -18,44 +18,41 @@ cleanup() {
 # Set up error handling
 trap cleanup ERR
 
-# Configuration - user must set these
-CONTAINER_TYPE="${1:-${CONTAINER_TYPE:-debian12-ssh}}"
-
-# Parse CONTAINER_TYPE into DISTRO and VERSION for new naming pattern
-case "$CONTAINER_TYPE" in
-    debian12-ssh)
-        DISTRO="debian"
-        VERSION="12"
-        ;;
-    debian13-ssh)
-        DISTRO="debian"
-        VERSION="13"
-        ;;
-    rocky9x-ssh)
-        DISTRO="rocky"
-        VERSION="9"
-        ;;
-   rocky10-ssh)
-        DISTRO="rocky"
-        VERSION="10"
-        ;;
-    ubuntu24-ssh)
-        DISTRO="ubuntu"
-        VERSION="24"
-        ;;
+# Parse command-line flags with defaults
+DISTRO=""
+VERSION=""
+while getopts "d:v:" opt; do
+  case $opt in
+    d) DISTRO=$OPTARG ;;
+    v) VERSION=$OPTARG ;;
     *)
-        echo "Error: CONTAINER_TYPE must be one of: debian13-ssh, debian12-ssh, rocky9x-ssh, rocky10-ssh, ubuntu24-ssh"
-        exit 1
-        ;;
-esac
+      echo "Usage: $0 -d DISTRO -v VERSION" >&2
+      echo "Examples:"
+      echo "  $0 -d debian -v 13"
+      echo "  $0 -d rocky -v 9"
+      echo "  $0 -d ubuntu -v 24"
+      exit 1
+      ;;
+  esac
+done
 
-IMAGE="${IMAGE:-ghcr.io/jackaltx/testing-containers/${DISTRO}-ssh:${VERSION}}"
+# Apply defaults if not provided
+DISTRO="${DISTRO:-debian}"
+VERSION="${VERSION:-12}"
+
+# Configuration from environment with defaults
+REGISTRY_HOST="${REGISTRY_HOST:-ghcr.io}"
+REGISTRY_USER="${REGISTRY_USER:-jackaltx}"
+REGISTRY_REPO="${REGISTRY_REPO:-testing-containers}"
+
+# Image naming: distro-ssh:version
+IMAGE="${IMAGE:-$REGISTRY_HOST/$REGISTRY_USER/$REGISTRY_REPO/${DISTRO}-ssh:${VERSION}}"
 CONTAINER_NAME="${CONTAINER_NAME:-test_container}"
 NETWORK_NAME="monitoring-net"
 LPORT="${LPORT:-2222}"
 SSH_PORT="$LPORT"
 
-log "Version: $VERSION"
+log "Starting ${DISTRO}-ssh:${VERSION}"
 log "Using image: $IMAGE"
 log "Container name: $CONTAINER_NAME"
 
@@ -91,8 +88,10 @@ podman run -d \
 
 # Wait for container to be ready
 for i in {1..30}; do
-    if podman exec "$CONTAINER_NAME" systemctl is-active sshd >/dev/null 2>&1; then
+    if podman exec "$CONTAINER_NAME" systemctl is-active sshd >/dev/null 2>&1 || \
+       podman exec "$CONTAINER_NAME" systemctl is-active ssh >/dev/null 2>&1; then
         log "Container is ready"
+        log "SSH: ssh -p $SSH_PORT jackaltx@localhost"
         exit 0
     fi
     sleep 1
