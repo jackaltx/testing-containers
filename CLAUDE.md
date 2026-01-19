@@ -11,24 +11,29 @@ These are deliberately minimal - don't suggest adding features. User wants stock
 ## Quick Commands
 
 ```bash
-# Build (requires SSH_KEY and token)
-./build.sh debian12-ssh
-./build.sh rocky9x-ssh
-./build.sh ubuntu24-ssh
+# Setup registry credentials (required first step)
+source ~/.secrets/testing-containers-registry.conf github   # For GitHub
+source ~/.secrets/testing-containers-registry.conf gitea    # For Gitea lab
+
+# Build containers
+./build.sh -d debian -v 12
+./build.sh -d debian -v 13
+./build.sh -d rocky -v 9
+./build.sh -d rocky -v 10
+./build.sh -d ubuntu -v 24
 
 # Test locally
-export CONTAINER_TYPE=debian12-ssh
-./run-podman.sh
+./run-podman.sh -d debian -v 13
 ssh -p 2222 jackaltx@localhost
 ./cleanup-podman.sh
 ```
 
 ## What's Included
 
-Three distributions:
-- **debian12-ssh**: Debian 12, apt, OpenSSH
-- **rocky9x-ssh**: Rocky Linux 9.x, dnf, OpenSSH
-- **ubuntu24-ssh**: Ubuntu 24.04 LTS, apt, OpenSSH
+Supported distributions:
+- **debian**: Debian 12, 13 (apt, OpenSSH)
+- **rocky**: Rocky Linux 9, 10 (dnf, OpenSSH)
+- **ubuntu**: Ubuntu 24.04 LTS (apt, OpenSSH)
 
 Each has:
 - Python 3 (Ansible requirement)
@@ -40,23 +45,49 @@ Each has:
 
 ```bash
 # Syntax
-./build.sh <container-type>
+./build.sh -d DISTRO -v VERSION
 
-# Environment variables
-SSH_KEY          # Required - public key to inject
-CONTAINER_TOKEN  # For ghcr.io (default registry)
-GITEA_TOKEN      # For Gitea registry
-REGISTRY_HOST    # Defaults to ghcr.io
+# Examples
+./build.sh -d debian -v 13
+./build.sh -d rocky -v 9
+./build.sh -d ubuntu -v 24
+
+# Required environment (set by sourcing registry config)
+SSH_KEY          # Public key to inject
+CONTAINER_TOKEN  # Registry authentication token
+REGISTRY_HOST    # Registry URL (ghcr.io or gitea.a0a0.org:3001)
+REGISTRY_USER    # Registry username (jackaltx)
+REGISTRY_REPO    # Repository name (testing-containers)
+```
+
+## Registry Configuration
+
+Registry credentials stored in `~/.secrets/testing-containers-registry.conf` (NOT in repo):
+
+```bash
+# GitHub Container Registry
+source ~/.secrets/testing-containers-registry.conf github
+
+# Gitea Lab Registry
+source ~/.secrets/testing-containers-registry.conf gitea
 ```
 
 ## Key Files
 
-- `debian12-ssh/Containerfile` - Debian build definition
-- `rocky9x-ssh/Containerfile` - Rocky build definition
-- `ubuntu24-ssh/Containerfile` - Ubuntu build definition
+- `debian/Containerfile` - Debian/Ubuntu build definition (parameterized)
+- `rocky/Containerfile` - Rocky build definition (parameterized)
 - `build.sh` - Build and push script
 - `run-podman.sh` - Local test runner
 - `cleanup-podman.sh` - Clean up test containers
+
+## Image Naming
+
+Output images follow pattern: `{distro}-ssh:{version}`
+
+Examples:
+- `ghcr.io/jackaltx/testing-containers/debian-ssh:13`
+- `ghcr.io/jackaltx/testing-containers/rocky-ssh:9`
+- `gitea.a0a0.org:3001/jackaltx/testing-containers/ubuntu-ssh:24`
 
 ## Design Philosophy
 

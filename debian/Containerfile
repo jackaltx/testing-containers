@@ -1,7 +1,11 @@
 #####################################################
-#  create provisioner user for ansible.  
+#  create provisioner user for ansible.
 
-FROM debian:12
+# Build args for parameterized base image
+ARG DISTRO_BASE=debian
+ARG DISTRO_VERSION=12
+FROM ${DISTRO_BASE}:${DISTRO_VERSION}
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Update and install required packages
@@ -19,6 +23,7 @@ RUN apt-get update && \
     git \
     tmux \
     sysvinit-utils \
+    lsof \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -5,7 +5,8 @@
 #  we need to create a user that will automatically sudo.
 #  So honestly..I am conflicted.
 #
-FROM rockylinux:9.3
+ARG DISTRO_VERSION=9
+FROM rockylinux/rockylinux:${DISTRO_VERSION}
 
 # Update and install required packages
 RUN dnf -y update && \
@@ -16,6 +17,12 @@ RUN dnf -y update && \
     systemd \
     openssh-server \
     iproute \
+    vim \
+    wget \
+    git \
+    tmux \
+    procps-ng \
+    lsof \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
