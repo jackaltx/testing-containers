@@ -20,6 +20,7 @@ RUN apt-get update && \
     iproute2 \
     vim \
     wget \
+    gpg \
     git \
     tmux \
     sysvinit-utils \

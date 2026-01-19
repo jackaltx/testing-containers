@@ -2,17 +2,17 @@
 name: Build and Push Containers
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "debian13-ssh/**"
-      - "debian12-ssh/**"
-      - "rocky9x-ssh/**"
-      - "ubuntu24-ssh/**"
-      - "build.sh"
-      - ".github/workflows/build.yml"
-  pull_request:
-    branches: ["main"]
+  # Disabled auto-build on push - use workflow_dispatch to trigger manually
+  # push:
+  #   branches: ["main"]
+  #   paths:
+  #     - "debian/**"
+  #     - "rocky/**"
+  #     - "ubuntu/**"
+  #     - "build.sh"
+  #     - ".github/workflows/build.yml"
+  # pull_request:
+  #   branches: ["main"]
   workflow_dispatch:
 
 env:
@@ -32,8 +32,17 @@ jobs:
       matrix:
         # Building all container types
         # Images are pushed to ghcr.io/jackaltx/testing-containers/{distro}-ssh:{version}
-        container_type:
-          ["debian13-ssh", "debian12-ssh", "rocky9x-ssh", "ubuntu24-ssh"]
+        include:
+          - distro: debian
+            version: 12
+          - distro: debian
+            version: 13
+          - distro: rocky
+            version: 9
+          - distro: rocky
+            version: 10
+          - distro: ubuntu
+            version: 24
       fail-fast: false
 
     steps:
@@ -50,7 +59,6 @@ jobs:
           REGISTRY_HOST: ghcr.io
           REGISTRY_USER: ${{ github.repository_owner }}
           REGISTRY_REPO: testing-containers
-          CONTAINER_TYPE: ${{ matrix.container_type }}
           CONTAINER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
-        run: ./build.sh
+        run: ./build.sh -d ${{ matrix.distro }} -v ${{ matrix.version }}
