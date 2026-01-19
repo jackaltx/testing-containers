@@ -1,6 +1,8 @@
 # Testing Containers
 
-Factory-default container images for Ansible testing. Just SSH and Python - nothing else.
+These containers are used to test my ansible project. They are packages managed
+with minimal changes. I use SSH to at the transport.  The idea is to use the same transport
+and system management tools to minimized the difference between real and virtual.
 
 ## Purpose
 
@@ -9,6 +11,7 @@ Minimal base images for testing Ansible roles with Molecule. Each container prov
 - **Python 3** - For Ansible
 - **OpenSSH** - Key-based authentication
 - **systemd** - For service management
+- **lsof & ps** - Process utilities for debugging
 - **Factory defaults** - Stock OS configuration, updated packages
 
 ## Available Images
@@ -16,22 +19,46 @@ Minimal base images for testing Ansible roles with Molecule. Each container prov
 ```bash
 # Pull from GitHub Container Registry
 podman pull ghcr.io/jackaltx/testing-containers/debian-ssh:12
+podman pull ghcr.io/jackaltx/testing-containers/debian-ssh:13
 podman pull ghcr.io/jackaltx/testing-containers/rocky-ssh:9
+podman pull ghcr.io/jackaltx/testing-containers/rocky-ssh:10
 podman pull ghcr.io/jackaltx/testing-containers/ubuntu-ssh:24
 ```
 
 | Image | Base | Package Manager |
 |-------|------|-----------------|
 | debian-ssh:12 | debian:12 | apt |
+| debian-ssh:13 | debian:13 | apt |
 | rocky-ssh:9 | rockylinux:9 | dnf |
+| rocky-ssh:10 | rockylinux:10 | dnf |
 | ubuntu-ssh:24 | ubuntu:24.04 | apt |
 
 ## Quick Start
 
 Note: check that port 2222 is available before using!
 
+### Helper Scripts
+
 ```bash
-# Run container from github
+# Source registry credentials (GitHub or Gitea)
+source ~/.secrets/testing-containers-registry.conf github
+# or
+source ~/.secrets/testing-containers-registry.conf gitea
+
+# Run a container
+./run-podman.sh -d debian -v 13
+
+# SSH access (from another terminal)
+ssh -p 2222 jackaltx@localhost
+
+# Clean up
+./cleanup-podman.sh
+```
+
+### Manual Container Execution
+
+```bash
+# Run container from GitHub
 podman run -d \
     --name test_container \
     --privileged \
@@ -44,24 +71,80 @@ podman run -d \
 ssh -p 2222 jackaltx@localhost
 ```
 
+## Registry Configuration
+
+Create `~/.secrets/testing-containers-registry.conf`:
+
 ```bash
-# Login to your local gitea server
-podman login ${GITEA_HOST}  -u ${GITEA_USER} -p ${GITEA_TOKEN}
+# Testing Containers Registry Configuration
+# Source this file before running build.sh or run-podman.sh
+#
+# Usage:
+#   source ~/.secrets/testing-containers-registry.conf github
+#   source ~/.secrets/testing-containers-registry.conf gitea
 
-# just to pull an image
-podman pull ${GITEA_HOST}/${GITEA_USER}/testing-containers/debian-ssh:12
+REGISTRY_PROFILE="${1:-github}"
 
- # Run container and pull
-podman run -d \
-    --name test_container \
-    --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-    -p 2222:22 \
-    ${GITEA_HOST}/${GITEA_USER}/testing-containers/debian-ssh:12 \
-    /sbin/init
+# Common config
+export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+export REGISTRY_USER="your-username"
+export REGISTRY_REPO="testing-containers"
 
-# SSH access
-ssh -p 2222 jackaltx@loca`lhost
+# Profile-specific config
+case "$REGISTRY_PROFILE" in
+    github|gh)
+        export REGISTRY_HOST="ghcr.io"
+        export CONTAINER_TOKEN="ghp_YourGitHubTokenHere"
+        echo "✓ Configured for GitHub Container Registry (ghcr.io)"
+        ;;
+    gitea|lab)
+        export REGISTRY_HOST="gitea.example.com"
+        export CONTAINER_TOKEN="YourGiteaTokenHere"
+        echo "✓ Configured for Gitea Registry (gitea.example.com)"
+        ;;
+    *)
+        echo "Error: Invalid registry profile '$REGISTRY_PROFILE'"
+        echo "Usage: source ~/.secrets/testing-containers-registry.conf [github|gitea]"
+        return 1
+        ;;
+esac
+
+# Display current config
+echo "  Registry: $REGISTRY_HOST"
+echo "  User: $REGISTRY_USER"
+echo "  Repo: $REGISTRY_REPO"
+```
+
+**Important:**
+
+- Never commit this file to git
+- Use GitHub Personal Access Token (PAT) with `write:packages` scope
+- Use Gitea Application Token with package write permissions
+- Store in `~/.secrets/` directory (outside repository)
+
+## Building Images
+
+### Build and Push to Registry
+
+```bash
+# Source credentials first
+source ~/.secrets/testing-containers-registry.conf github
+
+# Build specific version
+./build.sh -d debian -v 12
+./build.sh -d debian -v 13
+./build.sh -d rocky -v 9
+./build.sh -d ubuntu -v 24
+```
+
+### Build for Gitea
+
+```bash
+# Source Gitea credentials
+source ~/.secrets/testing-containers-registry.conf gitea
+
+# Build and push to Gitea
+./build.sh -d debian -v 13
 ```
 
 ## Molecule Integration
@@ -77,44 +160,71 @@ platforms:
     command: /sbin/init
 ```
 
-## Building Images
+## Development
 
-See [build.sh](build.sh) for building and pushing to registries.
+### Repository Structure
 
-### Build and publish packages on Github
-
-```bash
-export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-export CONTAINER_TOKEN=ghp_your_token_here
-./build.sh debian12-ssh
+```text
+testing-containers/
+├── debian/
+│   └── Containerfile          # Unified for Debian & Ubuntu
+├── rocky/
+│   └── Containerfile          # Rocky-specific
+├── build.sh                   # Build & push images
+├── run-podman.sh              # Test containers locally
+├── cleanup-podman.sh          # Remove test containers
+└── README.md
 ```
 
-or
+### Adding New Versions
+
+1. Update base image version in Containerfile ARG
+2. Build with new version: `./build.sh -d debian -v 14`
+3. Test locally: `./run-podman.sh -d debian -v 14`
+
+### Design Philosophy
+
+**Keep it minimal.** These are factory-default containers for testing:
+
+- No configuration management tools
+- No monitoring agents
+- No custom configurations
+- Just stock OS + SSH + Python + systemd
+
+This ensures consistent, predictable testing environments.
+
+## Troubleshooting
+
+### Authentication Errors
+
+If you see "unauthorized" errors when pulling images:
 
 ```bash
-source ~/.secrets/JackaltxGithubProvision
-REGISTRY_HOST=ghcr.io CONTAINER_TOKEN=${GITHUB_PKG_TOKEN} SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)   ./build.sh ubuntu24-ssh
+# Make sure you've sourced the registry config
+source ~/.secrets/testing-containers-registry.conf github
+
+# Or for private Gitea registry
+source ~/.secrets/testing-containers-registry.conf gitea
 ```
 
-### Build and publish on Local Gitea
+### Port Already in Use
+
+If port 2222 is already in use:
 
 ```bash
-source ~/.secrets/LabGiteaToken 
-REGISTRY_HOST=${GITEA_HOST}  ./build.sh debian13-ssh
+# Use custom port
+LPORT=2223 ./run-podman.sh -d debian -v 13
+ssh -p 2223 jackaltx@localhost
 ```
 
-The ./secrets/LabGiteaToken file:
+### Container Won't Start
+
+Check that systemd is running:
 
 ```bash
-# This is used to set the package location
-export GITEA_HOST="https://gitea.example.com
-
-# The username
-export GITEA_USER="jackaltx"
-
-# not your password, but an application token.
-export GITEA_TOKEN=<Your GITEA application token>
-
-# Used to access test image from your ansible user
-export SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
+podman exec test_container systemctl is-active sshd
 ```
+
+## License
+
+See LICENSE file.

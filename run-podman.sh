@@ -59,6 +59,12 @@ log "Starting ${DISTRO}-ssh:${VERSION}"
 log "Using image: $IMAGE"
 log "Container name: $CONTAINER_NAME"
 
+# Login to registry if CONTAINER_TOKEN is set
+if [ -n "$CONTAINER_TOKEN" ]; then
+    log "Logging in to $REGISTRY_HOST..."
+    echo "$CONTAINER_TOKEN" | podman login "$REGISTRY_HOST" -u "$REGISTRY_USER" --password-stdin >/dev/null 2>&1
+fi
+
 # Create network if it doesn't exist
 if ! podman network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
     log "Creating network $NETWORK_NAME..."
