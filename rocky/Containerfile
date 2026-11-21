@@ -108,6 +108,12 @@ RUN echo "umask 027" >> /etc/profile && \
     echo "TMOUT=900" >> /etc/profile && \
     echo "readonly TMOUT" >> /etc/profile
 
+# Rootless container prerequisites (shadow-utils already installed; add slirp4netns for networking)
+RUN dnf -y install slirp4netns && dnf clean all
+
+RUN echo "jackaltx:100000:65536" >> /etc/subuid && \
+    echo "jackaltx:100000:65536" >> /etc/subgid
+
 # Verify permissions
 RUN ls -l /usr/bin/sudo && \
     ls -l /etc/sudoers.d/jackaltx && \

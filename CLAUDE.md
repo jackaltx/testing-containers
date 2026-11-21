@@ -31,11 +31,13 @@ ssh -p 2222 jackaltx@localhost
 ## What's Included
 
 Supported distributions:
+
 - **debian**: Debian 12, 13 (apt, OpenSSH)
 - **rocky**: Rocky Linux 9, 10 (dnf, OpenSSH)
 - **ubuntu**: Ubuntu 24.04 LTS (apt, OpenSSH)
 
 Each has:
+
 - Python 3 (Ansible requirement)
 - OpenSSH server (key-based only)
 - systemd (for service testing)
@@ -85,16 +87,31 @@ source ~/.secrets/testing-containers-registry.conf gitea
 Output images follow pattern: `{distro}-ssh:{version}`
 
 Examples:
+
 - `ghcr.io/jackaltx/testing-containers/debian-ssh:13`
 - `ghcr.io/jackaltx/testing-containers/rocky-ssh:9`
 - `gitea.a0a0.org:3001/jackaltx/testing-containers/ubuntu-ssh:24`
 
+## Nested Container Support
+
+Both Containerfiles include prerequisites for rootless Podman to work inside a running container:
+
+- **Debian/Ubuntu**: `uidmap` (provides `newuidmap`/`newgidmap`) + `slirp4netns`
+- **Rocky**: `slirp4netns` (`shadow-utils` already ships `newuidmap`/`newgidmap`)
+- Both: `/etc/subuid` and `/etc/subgid` entries for `jackaltx:100000:65536`
+
+The run-podman.sh `--privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw` flags are
+the host-side requirement. With both in place, roles that install Podman (e.g. solti-ensemble's
+`podman` role) can install and run rootless containers inside the test container.
+
 ## Design Philosophy
 
 **Keep it minimal.** Don't suggest:
+
 - Additional packages beyond base requirements
 - Configuration management tools
 - Monitoring agents
 - Custom configurations
 
 User wants factory defaults for consistent, predictable testing environments.
+The nested container prerequisites are the explicit exception to this rule.
