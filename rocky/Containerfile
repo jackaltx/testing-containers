@@ -111,8 +111,13 @@ RUN echo "umask 027" >> /etc/profile && \
 # Rootless container prerequisites (shadow-utils already installed; add slirp4netns for networking)
 RUN dnf -y install slirp4netns && dnf clean all
 
-RUN echo "jackaltx:100000:65536" >> /etc/subuid && \
-    echo "jackaltx:100000:65536" >> /etc/subgid
+# Clear any auto-allocated subuid/subgid entries from useradd to avoid duplicate mappings.
+# Rocky's shadow-utils provides newuidmap with file capabilities which don't survive container builds;
+# set traditional setuid bit instead.
+RUN sed -i '/^jackaltx:/d' /etc/subuid /etc/subgid ; \
+    echo "jackaltx:100000:65536" >> /etc/subuid ; \
+    echo "jackaltx:100000:65536" >> /etc/subgid ; \
+    chmod u+s /usr/bin/newuidmap /usr/bin/newgidmap
 
 # Verify permissions
 RUN ls -l /usr/bin/sudo && \
