@@ -74,6 +74,26 @@ source ~/.secrets/testing-containers-registry.conf github
 source ~/.secrets/testing-containers-registry.conf gitea
 ```
 
+## Dual Registry Architecture
+
+Two registries serve different purposes and are updated independently:
+
+| Registry | URL | Updated by | Used by |
+| --- | --- | --- | --- |
+| GitHub (ghcr.io) | `ghcr.io/jackaltx/testing-containers/` | GH Actions CI (auto on main) | solti-podman molecule |
+| Gitea (local) | `gitea.a0a0.org:3001/jackaltx/testing-containers/` | Manual `./build.sh` from dev machine | solti-ensemble molecule |
+
+**Why separate:** Gitea is behind a firewall — GitHub Actions cannot reach it. There is no Gitea Act Runner configured, so Gitea builds are always manual.
+
+**When to push to Gitea:** After any Containerfile change that affects solti-ensemble molecule tests. Run `build.sh` with the gitea registry conf sourced.
+
+**Future:** A Gitea act runner on any always-on LAN machine (bot-test, etc.) would automate Gitea builds. The runner dials *out* to Gitea — no firewall change needed. Not yet configured; not urgent.
+
+**Collections and their registry:**
+
+- `solti-podman` molecule → `ghcr.io` (updated by CI)
+- `solti-ensemble` molecule → `gitea.a0a0.org:3001` (updated manually)
+
 ## Key Files
 
 - `debian/Containerfile` - Debian/Ubuntu build definition (parameterized)
