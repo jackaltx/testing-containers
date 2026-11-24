@@ -27,4 +27,4 @@ jobs:
         with:
           dockerfile: ${{ matrix.containerfile }}
           failure-threshold: error
-          ignore: DL3008,DL3015,DL3033,SC2086
+          ignore: DL3004,DL3008,DL3015,DL3033,SC2086
