@@ -1,0 +1,30 @@
+---
+name: Lint Containerfiles
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [main]
+
+jobs:
+  hadolint:
+    name: Hadolint
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        containerfile:
+          - debian/Containerfile
+          - rocky/Containerfile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Lint ${{ matrix.containerfile }}
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.containerfile }}
+          failure-threshold: error
+          ignore: DL3008,DL3015,DL3033,SC2086
