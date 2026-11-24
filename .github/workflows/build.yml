@@ -2,17 +2,17 @@
 name: Build and Push Containers
 
 on:
-  # Disabled auto-build on push - use workflow_dispatch to trigger manually
-  # push:
-  #   branches: ["main"]
-  #   paths:
-  #     - "debian/**"
-  #     - "rocky/**"
-  #     - "ubuntu/**"
-  #     - "build.sh"
-  #     - ".github/workflows/build.yml"
-  # pull_request:
-  #   branches: ["main"]
+  push:
+    branches: ["main"]
+    paths:
+      - "debian/**"
+      - "rocky/**"
+      - "ubuntu/**"
+      - "build.sh"
+      - ".github/workflows/build.yml"
+  schedule:
+    # First of every month at 02:00 UTC — rebuild to pull fresh packages
+    - cron: "0 2 1 * *"
   workflow_dispatch:
 
 env:
@@ -23,7 +23,7 @@ env:
 # https://docs.github.com/en/actions/writing-workflows/choosing-where-your-workflow-runs/choosing-the-runner-for-a-job
 jobs:
   build-containers:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
